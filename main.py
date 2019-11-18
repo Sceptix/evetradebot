@@ -24,97 +24,79 @@ except AttributeError:
 #create buy orders for items that havent got one yet
 orderlist = []
 #150 million, todo keep track of this differently
-usercapital = 150 * 10**6
+usercapital = 1 * 10**4
 
 with open('openorders.csv') as orders:
     data = list(csv.reader(orders, delimiter=','))
     for x in data:
-        orderlist.append(Order(x[0], x[1], x[2]))
+        orderlist.append(Order(x[0], x[1], x[2], x[3]))
 
 #todo implement saving the refreshed order list
+print(orderlist)
+orderlist, soldorders = refreshOrders(orderlist)
+print(soldorders)
+print(orderlist)
 
-#todo uncomment me orderlist = refreshOrders()
+def saveOrderList():
+    f = open('openorders.csv', "w")
+    for order in orderlist:
+        f.write(order.csvdump() + "\n")
+    f.close()
 
 with open('items.csv') as items:
     data = list(csv.reader(items, delimiter=','))
     totalvolume = 0
     totalvolume += sum(int(x[1]) for x in data)
-    print(totalvolume)
     for row in data:
-        print(row)
         itemname = row[0]
+        if(any(x for x in orderlist if x.name == itemname)):
+            print("item " + itemname + " already in orders, skipping")
+            continue
         itempercentage = int(row[1]) / totalvolume
         print(itemname)
         print(itempercentage)
-        for x in orderlist:
-            if(itemname == x.name):
-                break
-            #we only get here if we dont have a buy order with that item name yet
-            purchasetotal = usercapital * itempercentage
-            buyprice = getItemPrices(itemname)[0]
-            buyprice += round(random.random() / 7, 2)
-            quantity = int(purchasetotal / buyprice)
-            print(itemname + " , " + buyprice + " , " + quantity)
-            buyorder(itemname, buyprice, quantity)
-            
-                
-        #bla bla if order exists go skip, but dont change the eprcenratages
+        unordereditems = []
+        #we only get here if we dont have a buy order with that item name yet
+        purchasetotal = usercapital * itempercentage
+        buyprice = getItemPrices(itemname)[0]
+        buyprice = round(buyprice + random.random() / 7 + 0.01, 2)
+        quantity = int(purchasetotal / buyprice)
+        print(str(itemname) + " , " + str(buyprice) + " , " + str(quantity))
+        buyorder(itemname, buyprice, quantity)
+        orderlist.append(Order(itemname, buyprice, True, time.time()))
+        saveOrderList()
 
-sys.exit(1)
+#todo remember not to overbid yourself
 
-def clickDetails():
-    clickPointPNG('imgs/multibuy.png', 60, 3)
+#underbid order loop logic
 
-def clickMyOrders():
-    clickPointPNG('imgs/multibuy.png', 160, 3)
+#i need a function that goes through every order
+#looking at the saved order price and comparing it with the api order price
+#if the api order price is higher, that means somebody else overbid me
+#so i have to update the order
 
-def refreshOrders():
-    clickMyOrders()
-    clickPointPNG('imgs/myordersexport.png', 10, 10)
-    pyautogui.sleep(1)
-    marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
-    logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
-    neworderlist = []
-    with open(logfile) as export:
-        reader = csv.DictReader(export)
-        
-        for line in reader:
-            print("LINE: " + str(line))
-            name = getNameFromID(line['typeID'])
-            for x in orderlist:
-                if x.name == name:
-                    neworderlist.append(x)
-    os.remove(logfile)
-    #change the durations i guess?
-    return neworderlist
+#for i in range(1000 + random.randint(-51, 55)):
+#    time.sleep()
 
-
-refreshOrders()
-
+start = time.time()
+#changeOrder(orderlist[0], 7347.5, 0)
+#sellitemininventory("proteins", 1235.29)
+#buyorder("occult s", 15, 5)
+#orderlist.append(Order("occult s", 15, True, time.time()))
+#saveOrderList()
+orderlist = refreshOrders(orderlist)
+end = time.time()
+print(end-start)
 
 
 #print(getItemPrices("amarr Titan"))
 
 
-def changeOrder(order, newprice, position):
-    clickMyOrders()
-    if order.isbuy:
-        clickPointPNG('imgs/myordersbuying.png', 100, 22 + (20 * position), clicks=1, right=True)
-    else:
-        clickPointPNG('imgs/myordersselling.png', 100, 22 + (20 * position), clicks=1, right=True)
-    pyautogui.sleep(0.2)
-    pyautogui.move(35, 10)
-    pyautogui.click()
-    pyautogui.sleep(0.2)
-    pyautogui.typewrite(['backspace'])
-    pyautogui.typewrite(str(newprice), interval=0.1)
-    return
-    pyautogui.typewrite(['enter'])
 
 #changeSellOrder("Spirits", 407.02)
 
 
-#sellitemininventory("proteins", 1235.29)
+
 
 
 

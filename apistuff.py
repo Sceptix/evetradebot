@@ -14,7 +14,6 @@ def getItemPrices(name):
     id = getItemID(name)
     
     response = requests.get("https://esi.evetech.net/latest/markets/10000002/orders/?datasource=tranquility&type_id=" + str(id))
-    print(response)
     buyorders = []
     sellorders = []
     

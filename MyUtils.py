@@ -1,6 +1,10 @@
 import pyautogui
 from PIL import Image, ImageGrab, ImageFilter, ImageEnhance, ImageOps
 import pytesseract
+import os
+import csv
+from apistuff import *
+from orderstuff import *
 
 
 
@@ -24,6 +28,49 @@ def clickxy(x, y, clicks=1, right=False):
 		pyautogui.click(button='right', clicks=clicks)
 	else:
 		pyautogui.click(clicks=clicks)
+
+def clickDetails():
+	clickPointPNG('imgs/multibuy.png', 60, 3)
+
+def clickMyOrders():
+	clickPointPNG('imgs/multibuy.png', 160, 3)
+
+#todo remove order or position as they both have the same information source
+#todo implement resetting the duration of the order
+def changeOrder(order, newprice, position):
+    clickMyOrders()
+    if order.isbuy:
+        clickPointPNG('imgs/myordersbuying.png', 100, 22 + (20 * position), clicks=1, right=True)
+    else:
+        clickPointPNG('imgs/myordersselling.png', 100, 22 + (20 * position), clicks=1, right=True)
+    pyautogui.sleep(0.2)
+    pyautogui.move(35, 10)
+    pyautogui.click()
+    pyautogui.sleep(0.2)
+    pyautogui.typewrite(['backspace'])
+    pyautogui.typewrite(str(newprice), interval=0.1)
+    pyautogui.typewrite(['enter'])
+
+def refreshOrders(orderlist):
+	clickMyOrders()
+	pyautogui.sleep(0.2)
+	clickPointPNG('imgs/myordersexport.png', 10, 10)
+	pyautogui.sleep(0.5)
+	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
+	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
+	neworderlist = []
+	soldorders = []
+	with open(logfile) as export:
+		reader = csv.DictReader(export)
+		for line in reader:
+			name = getNameFromID(line['typeID'])
+			for x in orderlist:
+				if x.name == name:
+					neworderlist.append(x)
+		s = set(neworderlist)
+		soldorders = [x for x in orderlist if x not in s]	
+	os.remove(logfile)
+	return neworderlist, soldorders
 
 def search_market(item):
 	pos = pyautogui.locateOnScreen('imgs/search.png')
@@ -62,7 +109,7 @@ def grabandocr(box, pricesonly=False, treshfilter=False):
 def buyorder(name, price, quantity):
 	clickDetails()
 	openItem(name)
-	pyautogui.sleep(0.3)
+	pyautogui.sleep(3)
 	thing = pyautogui.locateOnScreen('imgs/placebuyorder.png')
 	buyorderpos = Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
 	clickPoint(buyorderpos)
@@ -91,7 +138,7 @@ def buyorder(name, price, quantity):
 	pyautogui.typewrite(str(quantity), interval=0.1)
 	clickPoint(duration)
 	clickPoint(threemonths)
-	clickPoint(buybutton, 2)
+	clickPoint(buybutton, 1)
 	pyautogui.sleep(0.6)
 	thing = pyautogui.locateOnScreen('imgs/confirmorder.png')
 	confirmyes = Point( thing.left + 149 , thing.top + 197)
@@ -112,7 +159,6 @@ def openItem(itemname):
 		ocr = grabandocr(searchareacapturepos)
 
 		for s in ocr.splitlines()[1:]:
-			print("first loop s: " + s)
 			if(s.split()[-1] in itemname.lower()):
 				offsetpos = searchareacapturepos
 				mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
@@ -122,11 +168,9 @@ def openItem(itemname):
 
 		#we only get here if it didnt find an item: the item must have been in a collapsed category
 		for s in ocr.splitlines()[1:]:
-			print("second loop s: " + s)
 			if len(s.split()[-1]) > 3:
 				#we do NOT want to open the blueprint category
 				if not "prints" in s and not "react" in s:
-					print("got here")
 					offsetpos = searchareacapturepos
 					mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
 					mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
