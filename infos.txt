@@ -1,0 +1,24 @@
+Occult M, 514663	
+Occult L, 493515
+Meson Exotic Plasma M, 439080
+Tetryon Exotic Plasma M, 369677
+Mystic M, 335343	
+Tetryon Exotic Plasma L, 299679	
+Baryon Exotic Plasma M, 276002	
+Fullerite-C50, 253953
+Compressed Sparkling Plagioclase, 244329	
+Fullerite-C72, 190636	
+Fullerite-C28, 168546	
+Electromechanical Hull Sheeting, 166875	
+Water-Cooled CPU, 164059	
+Arch Angel Phased Plasma XL, 156065	
+Viral Agent, 155798	
+Conductive Polymer, 138726	
+Polytextiles, 115865	
+
+
+2.8 sekunden um nen orderprice zu ändern
+11.2 sekunden um ne sellorder zu machen
+16.7 sekunden um ne buyorder zu machen
+3.5 sekunden um orders zu refreshen
+
