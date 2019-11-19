@@ -2,7 +2,7 @@ import time
 import sys
 
 class Order:
-    def __init__(self, name, price, isbuy, boughtat):
+    def __init__(self, name: str, price: float, isbuy: bool, boughtat: float):
         self.name = name
         self.price = price
         self.isbuy = isbuy
@@ -13,11 +13,5 @@ class Order:
         return "Order: " + str(self.__dict__) + "\n" 
     def canChange(self):
         return (time.time() - self.boughtat) > 300
-    def change(self, newprice):
-        if not canChange(self):
-            print("tried changing order before possible")
-            sys.exit()
-        self.boughtat = time.time()
-        self.price = newprice
     def csvdump(self):
         return str(self.name) + ', ' + str(self.price) + ', ' + str(self.isbuy) + ', ' + str(self.boughtat)

@@ -3,6 +3,7 @@ from PIL import Image, ImageGrab, ImageFilter, ImageEnhance, ImageOps
 import pytesseract
 import os
 import csv
+import random
 from apistuff import *
 from orderstuff import *
 
@@ -35,31 +36,107 @@ def clickDetails():
 def clickMyOrders():
 	clickPointPNG('imgs/multibuy.png', 160, 3)
 
-#todo remove order or position as they both have the same information source
-#todo implement resetting the duration of the order
-def changeOrder(isbuy, newprice, position):
-    clickMyOrders()
-    if isbuy:
-        clickPointPNG('imgs/myordersbuying.png', 100, 22 + (20 * position), clicks=1, right=True)
-    else:
-        clickPointPNG('imgs/myordersselling.png', 100, 22 + (20 * position), clicks=1, right=True)
-    pyautogui.sleep(0.2)
-    pyautogui.move(35, 10)
-    pyautogui.click()
-    pyautogui.sleep(0.2)
-    pyautogui.typewrite(['backspace'])
-    pyautogui.typewrite(str(newprice), interval=0.1)
-    pyautogui.typewrite(['enter'])
+def cancelOrder(order, position):
+	print("cancelling order: " + str(order))
+	clickMyOrders()
+	clickPointPNG('imgs/myordersbuying.png', 100, 22 + (20 * position), clicks=1, right=True)
+	pyautogui.sleep(0.2)
+	pyautogui.move(40, 115)
+	pyautogui.click()
+
+def doSoldOrders(soldorders):
+	neworders = []
+	for x in soldorders:
+		if not x.isbuy:
+			print("theres a sellorder in soldorders, aborting")
+			sys.exit()
+		lowestSellPrice = getItemPrices(x.name)[1]
+		lowestSellPrice  = round(lowestSellPrice - random.random() / 7 - 0.01, 2)
+		sellitemininventory(x.name, lowestSellPrice)
+		neworders.append(Order(x.name, lowestSellPrice, False, time.time()))
+	return neworders
+
+def getOrderPosition(itemname, orderlist, isItemBuy):
+	#splitting the orderlist into buy and sellorders
+	buylist = []
+	selllist = []
+	#sort by boughtat, which is also the standard sorting in eve's my orders
+	#todo implement check to look if "expires in" is sorted in the correct direction (oldest first)
+	orderlist.sort(key=lambda x: x.boughtat, reverse=False)
+	for order in orderlist:
+		if(order.isbuy):
+			buylist.append(order)
+		else:
+			selllist.append(order)
+	if (isItemBuy):
+		for x in range(len(buylist)):
+			if(buylist[x].name == itemname):
+				return x
+	else:
+		for x in range(len(selllist)):
+			if(selllist[x].name == itemname):
+				return x
+	print("couldnt find item in getorderposition, aborting")
+	sys.exit()
+
+def checkAndUnderBid(item, orderlist):
+	prices = getItemPrices(item)
+	priceratio = prices[1] / prices[0]
+	if(priceratio < 1.2):
+		#not profitable anymore because of taxes
+		return orderlist, True
+	for idx, x in enumerate(orderlist):
+		if x.name == item:
+			if x.isbuy:
+				#manage buyorders
+				curPrice = prices[0]
+				print("curprice of item called \"" + item + "\" is: " + str(curPrice))
+				if(curPrice > float(x.price)):
+					print("weve been overbid!")
+					position = getOrderPosition(item, orderlist.copy(), True)
+					newprice = round(curPrice + random.random() / 7 + 0.01, 2)
+					print("bidding for newprice: " + str(newprice))
+					neworder = changeOrder(x, newprice, position)
+					orderlist[idx] = neworder
+			else:
+				#manage sellorders
+				curPrice = prices[1]
+				print("curprice of item called \"" + item + "\" is: " + str(curPrice))
+				if(curPrice < float(x.price)):
+					print("weve been overbid!")
+					position = getOrderPosition(item, orderlist.copy(), False)
+					newprice = round(curPrice - random.random() / 7 +- 0.01, 2)
+					print("bidding for newprice: " + str(newprice))
+					neworder = changeOrder(x, newprice, position)
+					orderlist[idx] = neworder
+	return orderlist, False
+
+def changeOrder(order, newprice, position):
+	print("changing order of item: " + order.name)
+	clickMyOrders()
+	if order.isbuy:
+		clickPointPNG('imgs/myordersbuying.png', 100, 22 + (20 * position), clicks=1, right=True)
+	else:
+		clickPointPNG('imgs/myordersselling.png', 100, 22 + (20 * position), clicks=1, right=True)
+	pyautogui.sleep(0.2)
+	pyautogui.move(35, 10)
+	pyautogui.click()
+	pyautogui.sleep(0.2)
+	pyautogui.typewrite(['backspace'])
+	pyautogui.typewrite(str(newprice), interval=0.1)
+	pyautogui.typewrite(['enter'])
+	order.price = float(newprice)
+	order.boughtat = time.time()
+	return order
 
 def refreshOrders(orderlist):
 	clickMyOrders()
-	pyautogui.sleep(0.2)
+	pyautogui.sleep(0.3)
 	clickPointPNG('imgs/myordersexport.png', 10, 10)
-	pyautogui.sleep(0.5)
+	pyautogui.sleep(1)
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
-	neworderlist = []
-	soldorders = []
+	neworderlist, soldorders, finisheditems = [], [], []
 	with open(logfile) as export:
 		reader = csv.DictReader(export)
 		for line in reader:
@@ -68,9 +145,13 @@ def refreshOrders(orderlist):
 				if x.name == name:
 					neworderlist.append(x)
 		s = set(neworderlist)
-		soldorders = [x for x in orderlist if x not in s]	
+		soldorders = [x for x in orderlist if x not in s]
+		for idx,y in enumerate(soldorders):
+			if not y.isbuy:
+				finisheditems.append(y.name)
+				soldorders.pop(idx)
 	os.remove(logfile)
-	return neworderlist, soldorders
+	return neworderlist, soldorders, finisheditems
 
 def search_market(item):
 	pos = pyautogui.locateOnScreen('imgs/search.png')
@@ -159,12 +240,13 @@ def openItem(itemname):
 		ocr = grabandocr(searchareacapturepos)
 
 		for s in ocr.splitlines()[1:]:
-			if(s.split()[-1] in itemname.lower()):
-				offsetpos = searchareacapturepos
-				mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
-				mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
-				clickxy(mousex, mousey)
-				return
+			if len(s.split()[-1]) > 1:
+				if(s.split()[-1] in itemname.lower()):
+					offsetpos = searchareacapturepos
+					mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
+					mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
+					clickxy(mousex, mousey)
+					return
 
 		#we only get here if it didnt find an item: the item must have been in a collapsed category
 		for s in ocr.splitlines()[1:]:
@@ -193,7 +275,6 @@ def sellitemininventory(item, price):
 	ocr = grabandocr(box)
 
 	for s in ocr.splitlines()[1:]:
-		print("first loop s: " + s)
 		if(s.split()[-1] in item.lower()):
 			offsetpos = inventorylist
 			mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
@@ -209,9 +290,9 @@ def sellitemininventory(item, price):
 					mousex = mousex + 18 + int(s.split()[6]) / 4 + 5
 					mousey = mousey + 3 + int(s.split()[7]) / 4 + 5
 					clickxy(mousex, mousey)
-					pyautogui.sleep(1)
+					pyautogui.sleep(5)
 					thing = pyautogui.locateOnScreen('imgs/sellitems.png')
-					#quantityfield = Point( thing.left + thing.width / 2 , thing.top + 60) we dont need quantity, we always sell all items, maybe change this when you want multiple orders
+					#quantityfield = Point( thing.left + thing.width / 2 , thing.top + 60) we dont need quantity, we always sell all items, todo maybe change this when you want multiple orders
 					pricefield = Point( thing.left + thing.width / 2 , thing.top + 80)
 					thing = pyautogui.locateOnScreen('imgs/sellitemsellcancel.png')
 					sellbutton = Point( thing.left + 25, thing.top + 12)
