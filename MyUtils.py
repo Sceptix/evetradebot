@@ -37,9 +37,9 @@ def clickMyOrders():
 
 #todo remove order or position as they both have the same information source
 #todo implement resetting the duration of the order
-def changeOrder(order, newprice, position):
+def changeOrder(isbuy, newprice, position):
     clickMyOrders()
-    if order.isbuy:
+    if isbuy:
         clickPointPNG('imgs/myordersbuying.png', 100, 22 + (20 * position), clicks=1, right=True)
     else:
         clickPointPNG('imgs/myordersselling.png', 100, 22 + (20 * position), clicks=1, right=True)
