@@ -241,7 +241,7 @@ def openItem(itemname):
 
 		for s in ocr.splitlines()[1:]:
 			if len(s.split()[-1]) > 1:
-				if(s.split()[-1] in itemname.lower()):
+				if(s.split()[-1][:5] in itemname.lower()):
 					offsetpos = searchareacapturepos
 					mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
 					mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
@@ -275,7 +275,7 @@ def sellitemininventory(item, price):
 	ocr = grabandocr(box)
 
 	for s in ocr.splitlines()[1:]:
-		if(s.split()[-1] in item.lower()):
+		if(s.split()[-1][:5] in item.lower()):
 			offsetpos = inventorylist
 			mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
 			mousey = offsetpos.y + int(s.split()[7]) / 4 + 5

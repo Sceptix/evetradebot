@@ -80,7 +80,9 @@ with open('items.csv') as items:
 
 #function i use for rebuying items in the items.csv
 def buyItemProportionally(item):
-	data = list(csv.reader(items, delimiter=','))
+	data = None
+	with open('items.csv') as items:
+		data = list(csv.reader(items, delimiter=','))
 	totalvolume = 0
 	totalvolume += sum(int(x[1]) for x in data)
 	for row in data:
