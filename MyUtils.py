@@ -6,7 +6,8 @@ import csv
 import random
 from apistuff import *
 from orderstuff import *
-
+from pytz import timezone
+from datetime import datetime
 
 
 def clickPoint(point, clicks=1, right=False):
@@ -44,19 +45,8 @@ def cancelOrder(order, position):
 	pyautogui.move(40, 115)
 	pyautogui.click()
 
-def doSoldOrders(soldorders):
-	neworders = []
-	for x in soldorders:
-		if not x.isbuy:
-			print("theres a sellorder in soldorders, aborting")
-			sys.exit()
-		lowestSellPrice = getItemPrices(x.name)[1]
-		lowestSellPrice  = round(lowestSellPrice - random.random() / 7 - 0.01, 2)
-		sellitemininventory(x.name, lowestSellPrice)
-		neworders.append(Order(x.name, lowestSellPrice, False, time.time()))
-	return neworders
-
-def getOrderPosition(itemname, orderlist, isItemBuy):
+#todo stop it
+def getOrderPosition(itemhandlerlist, itemi):
 	#splitting the orderlist into buy and sellorders
 	buylist = []
 	selllist = []
@@ -79,37 +69,7 @@ def getOrderPosition(itemname, orderlist, isItemBuy):
 	print("couldnt find item in getorderposition, aborting")
 	sys.exit()
 
-def checkAndUnderBid(item, orderlist):
-	prices = getItemPrices(item)
-	priceratio = prices[1] / prices[0]
-	if(priceratio < 1.2):
-		#not profitable anymore because of taxes
-		return orderlist, True
-	for idx, x in enumerate(orderlist):
-		if x.name == item:
-			if x.isbuy:
-				#manage buyorders
-				curPrice = prices[0]
-				print("curprice of item called \"" + item + "\" is: " + str(curPrice))
-				if(curPrice > float(x.price)):
-					print("weve been overbid!")
-					position = getOrderPosition(item, orderlist.copy(), True)
-					newprice = round(curPrice + random.random() / 7 + 0.01, 2)
-					print("bidding for newprice: " + str(newprice))
-					neworder = changeOrder(x, newprice, position)
-					orderlist[idx] = neworder
-			else:
-				#manage sellorders
-				curPrice = prices[1]
-				print("curprice of item called \"" + item + "\" is: " + str(curPrice))
-				if(curPrice < float(x.price)):
-					print("weve been overbid!")
-					position = getOrderPosition(item, orderlist.copy(), False)
-					newprice = round(curPrice - random.random() / 7 +- 0.01, 2)
-					print("bidding for newprice: " + str(newprice))
-					neworder = changeOrder(x, newprice, position)
-					orderlist[idx] = neworder
-	return orderlist, False
+
 
 def changeOrder(order, newprice, position):
 	print("changing order of item: " + order.name)
@@ -129,29 +89,8 @@ def changeOrder(order, newprice, position):
 	order.boughtat = time.time()
 	return order
 
-def refreshOrders(orderlist):
-	clickMyOrders()
-	pyautogui.sleep(0.3)
-	clickPointPNG('imgs/myordersexport.png', 10, 10)
-	pyautogui.sleep(1)
-	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
-	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
-	neworderlist, soldorders, finisheditems = [], [], []
-	with open(logfile) as export:
-		reader = csv.DictReader(export)
-		for line in reader:
-			name = getNameFromID(line['typeID'])
-			for x in orderlist:
-				if x.name == name:
-					neworderlist.append(x)
-		s = set(neworderlist)
-		soldorders = [x for x in orderlist if x not in s]
-		for idx,y in enumerate(soldorders):
-			if not y.isbuy:
-				finisheditems.append(y.name)
-				soldorders.pop(idx)
-	os.remove(logfile)
-	return neworderlist, soldorders, finisheditems
+def getEVETimestamp():
+	return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()
 
 def search_market(item):
 	pos = pyautogui.locateOnScreen('imgs/search.png')
@@ -187,9 +126,9 @@ def grabandocr(box, pricesonly=False, treshfilter=False):
 	ocr = ocr.lower().split("\n",1)[1]
 	return ocr
 
-def buyorder(name, price, quantity):
+def buyorder(itemid, price, quantity):
 	clickDetails()
-	openItem(name)
+	openItem(itemid)
 	pyautogui.sleep(3)
 	thing = pyautogui.locateOnScreen('imgs/placebuyorder.png')
 	buyorderpos = Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
@@ -225,7 +164,8 @@ def buyorder(name, price, quantity):
 	confirmyes = Point( thing.left + 149 , thing.top + 197)
 	clickPoint(confirmyes)
 
-def openItem(itemname):
+def openItem(itemid):
+	itemname = getNameFromID(itemid)
 	clickDetails()
 	thing = pyautogui.locateOnScreen('imgs/browselistleft.png', 0.6)
 	thing2 = pyautogui.locateOnScreen('imgs/search.png')
@@ -261,7 +201,8 @@ def openItem(itemname):
 	print("looped through item opening 5 times without success, aborting")
 	sys.exit()
 
-def sellitemininventory(item, price):
+def sellitemininventory(itemid, price):
+	item = getNameFromID(itemid)
 	clickPointPNG('imgs/inventorytopright.png', 0, 25, 2)
 	pyautogui.typewrite(['backspace'])
 	pyautogui.typewrite(item, interval=0.1)

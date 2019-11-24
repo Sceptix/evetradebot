@@ -7,8 +7,16 @@ from MyUtils import *
 from apistuff import *
 from orderstuff import *
 import random
+import pickle
+from dateutil.parser import parse as DateUtilParser
 
-time.sleep(5)
+time1 = DateUtilParser("2019-11-24 13:19:04.000")
+print(time1)
+print(getEVETimestamp() - time1.timestamp())
+
+#time.sleep(5)
+
+#todo check items not more than 8 so you can have a sell and buy order of the same item type at all times (alpha account has 17 orders max)
 
 #close undock window
 
@@ -22,6 +30,7 @@ orderlist = []
 #50 million, todo keep track of this differently
 usercapital = 15 * 10**5
 
+#todo move this somewhere else
 def str2bool(string):
 	string = string.strip()
 	if(isinstance(string, bool)):
@@ -34,32 +43,46 @@ def str2bool(string):
 		print("wrong type for str2bool, got: " + str(type(string)) + ", aborting")
 		sys.exit()
 
-with open('openorders.csv') as orders:
-	data = list(csv.reader(orders, delimiter=','))
-	for x in data:
-		orderlist.append(Order(str(x[0]), float(x[1]), str2bool(x[2]), float(x[3])))
+#deprecated
+#with open('openorders.csv') as orders:
+#	data = list(csv.reader(orders, delimiter=','))
+#	for x in data:
+#		orderlist.append(Order(str(x[0]), float(x[1]), str2bool(x[2]), float(x[3])))
 
-orderlist, _, _ = refreshOrders(orderlist)
+#orderlist, _, _ = refreshOrders(orderlist)
 
-def saveOrderList():
-	f = open('openorders.csv', "w")
-	for order in orderlist:
-		f.write(order.csvdump() + "\n")
-	f.close()
+#def saveOrderList():
+#	f = open('openorders.csv', "w")
+#	for order in orderlist:
+#		f.write(order.csvdump() + "\n")
+#	f.close()
 	
-#every item in items.csv
-tradinglist = []
+#itemhandler for every item in items.csv
+itemhandlerlist = []
+
+def changeShit(ih):
+	ih.volume = 696969
+
+shittyih = ItemHandler("Spirits", 100000.2, 100, 0.2)
+print(shittyih.__dict__)
+changeShit(shittyih)
+print(shittyih.__dict__)
+
+
+print(pickle.dumps(itemhandlerlist))
+
+sys.exit()
 
 #buy all the items that havent been bought yet at start of trading day
-with open('items.csv') as items:
+with open('itemhandlers.json') as items:
 	data = list(csv.reader(items, delimiter=','))
 	totalvolume = 0
 	totalvolume += sum(int(x[1]) for x in data)
 	for row in data:
 		itemname = row[0]
 		tradinglist.append(itemname)
-		if(len(tradinglist) > 10):
-			print("tradinglist length over 10, aborting")
+		if(len(tradinglist) > 8):
+			print("tradinglist length over 8, aborting")
 			sys.exit()
 		if(any(x for x in orderlist if x.name == itemname)):
 			print("item " + itemname + " already in orders, skipping")
@@ -69,7 +92,6 @@ with open('items.csv') as items:
 		print(itempercentage)
 		#we only get here if we dont have a buy order with that item name yet
 		purchasetotal = usercapital * itempercentage
-		usercapital -= purchasetotal
 		buyprice = getItemPrices(itemname)[0]
 		buyprice = round(buyprice + random.random() / 7 + 0.01, 2)
 		quantity = int(purchasetotal / buyprice)
@@ -79,30 +101,19 @@ with open('items.csv') as items:
 		saveOrderList()
 
 #function i use for rebuying items in the items.csv
-def buyItemProportionally(item):
-	data = None
-	with open('items.csv') as items:
-		data = list(csv.reader(items, delimiter=','))
-	totalvolume = 0
-	totalvolume += sum(int(x[1]) for x in data)
-	for row in data:
-		if(row[0] == item):
-			itemname = row[0]
-			itempercentage = int(row[1]) / totalvolume
-		#we only get here if we dont have a buy order with that item name yet
-		purchasetotal = usercapital * itempercentage
-		usercapital -= purchasetotal
-		buyprice = getItemPrices(itemname)[0]
-		buyprice = round(buyprice + random.random() / 7 + 0.01, 2)
-		quantity = int(purchasetotal / buyprice)
-		print(str(itemname) + " , " + str(buyprice) + " , " + str(quantity))
-		buyorder(itemname, buyprice, quantity)
-		orderlist.append(Order(itemname, buyprice, True, time.time()))
-		saveOrderList()
+
 
 
 #underbid order loop logic
 
+#todo implement rebuying earlier, having sell and buy orders of the same type
+#having multiple buy and or sell orders of the same type (implementing scrolling in myorders)
+#rebuying items that sold out quickly more, not proportional to volume in items.csv
+#todo ??? selling items after going offline doesnt work
+#todo cant have buy and sell orders of same item type at the same time
+#todo keep track of orders better
+#todo make it only sell everything, no rebuying in the laste two or three hours, and delete the orders that didnt make it
+#todo automatic loading from evetrade.space
 
 #run for about 9 hours
 tradedaystart = time.time()
@@ -115,13 +126,6 @@ while time.time() - tradedaystart < 3600 * 9:
 	for changeableOrder in changeableOrders:
 		print("checking order: " + str(changeableOrder))
 		time.sleep(random.random() * 7)
-		orderlist, soldorders, finisheditems = refreshOrders(orderlist)
-		#sell items from fulfilled buy orders
-		newOrders = doSoldOrders(soldorders)
-		orderlist += newOrders
-		#make new buy orders for items that have been bought and sold
-		for y in finisheditems:
-			buyItemProportionally(y)
 
 		orderlist, unprofitable = checkAndUnderBid(changeableOrder.name, orderlist)
 		if(unprofitable):
