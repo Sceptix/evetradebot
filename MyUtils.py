@@ -36,41 +36,7 @@ def clickDetails():
 
 def clickMyOrders():
 	clickPointPNG('imgs/multibuy.png', 160, 3)
-
-def cancelOrder(order, position):
-	print("cancelling order: " + str(order))
-	clickMyOrders()
-	clickPointPNG('imgs/myordersbuying.png', 100, 22 + (20 * position), clicks=1, right=True)
-	pyautogui.sleep(0.2)
-	pyautogui.move(40, 115)
-	pyautogui.click()
-
-#todo stop it
-def getOrderPosition(itemhandlerlist, itemi):
-	#splitting the orderlist into buy and sellorders
-	buylist = []
-	selllist = []
-	#sort by boughtat, which is also the standard sorting in eve's my orders
-	#todo implement check to look if "expires in" is sorted in the correct direction (oldest first)
-	orderlist.sort(key=lambda x: x.boughtat, reverse=False)
-	for order in orderlist:
-		if(order.isbuy):
-			buylist.append(order)
-		else:
-			selllist.append(order)
-	if (isItemBuy):
-		for x in range(len(buylist)):
-			if(buylist[x].name == itemname):
-				return x
-	else:
-		for x in range(len(selllist)):
-			if(selllist[x].name == itemname):
-				return x
-	print("couldnt find item in getorderposition, aborting")
-	sys.exit()
-
-
-
+ 
 def changeOrder(order, newprice, position):
 	print("changing order of item: " + order.name)
 	clickMyOrders()

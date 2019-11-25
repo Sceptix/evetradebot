@@ -8,11 +8,6 @@ from apistuff import *
 from orderstuff import *
 import random
 import pickle
-from dateutil.parser import parse as DateUtilParser
-
-time1 = DateUtilParser("2019-11-24 13:19:04.000")
-print(time1)
-print(getEVETimestamp() - time1.timestamp())
 
 #time.sleep(5)
 
@@ -23,7 +18,7 @@ print(getEVETimestamp() - time1.timestamp())
 try:
 	clickPointPNG('imgs/undock.png', 173, 3)
 except AttributeError:
-	print("couldnt close undock window, was probably already closed")
+	print("couldnt close undock window, was pr7obably already closed")
 	
 #create buy orders for items that havent got one yet
 orderlist = []
@@ -31,17 +26,7 @@ orderlist = []
 usercapital = 15 * 10**5
 
 #todo move this somewhere else
-def str2bool(string):
-	string = string.strip()
-	if(isinstance(string, bool)):
-		return string
-	if(string == "True"):
-		return True
-	elif(string == "False"):
-		return False
-	else:
-		print("wrong type for str2bool, got: " + str(type(string)) + ", aborting")
-		sys.exit()
+
 
 #deprecated
 #with open('openorders.csv') as orders:
