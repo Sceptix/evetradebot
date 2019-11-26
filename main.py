@@ -13,8 +13,26 @@ def saveItemHandlers(itemhandlerlist):
     with open('itemhandlers.csv', 'w') as itemhandlersfile:
         pickle.dump(itemhandlerlist, itemhandlersfile)
 
+#changeOrder(Order(69, True, 1.53, 1, 1, 1), 2, 13)
 
-time.sleep(5)
+thing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
+selllisttopleft = Point(thing.left + 74, thing.top + 16)
+thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
+selllistbottomleft = Point(thing.left + 74, thing.top - 7)
+sellinglistheight = selllistbottomleft.y - selllisttopleft.y
+
+thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
+print(thing)
+buylisttopleft = Point(thing.left + 74, thing.top + 16)
+thing = pyautogui.locateOnScreen('imgs/myordersexport.png', confidence=0.9)
+print(thing)
+buylistbottomleft = Point(thing.left + 79, thing.top - 85)
+buylistheight = buylistbottomleft.y - buylisttopleft.y
+print(buylistheight)
+print(sellinglistheight)
+
+
+sys.exit()
 
 #close undock window
 
@@ -48,14 +66,14 @@ if(len(itemhandlerlist) > 8):
 #todo make it only sell everything, no rebuying in the laste two or three hours, and delete the orders that didnt make it
 #todo automatic loading from evetrade.space
 #todo implement an ocr check when changing orders!!! (check if it clicked the right order)
-#implement cancelling unprofitable itemhandlers' buyorders from this loop
+#todo restart game when disconnect
 
 #run for about 9 hours
 tradedaystart = getEVETimestamp()
 while getEVETimestamp() - tradedaystart < 3600 * 9:
 	for itemhandler in itemhandlerlist:
 		refreshOrderCache(itemhandlerlist)
-  		print("handling itemhandler: " + getNameFromID(itemhandler.typeid))
+		print("handling itemhandler: " + getNameFromID(itemhandler.typeid))
 		time.sleep(random.random() * 7)
 		itemhandler.handle()
 		if(itemhandler.unprofitable):

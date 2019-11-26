@@ -36,14 +36,28 @@ def clickDetails():
 
 def clickMyOrders():
 	clickPointPNG('imgs/multibuy.png', 160, 3)
- 
-def changeOrder(order, newprice, position):
-	print("changing order of item: " + order.name)
+
+def changeOrder(order, newprice, position, itemsinlist):
+	print("changing order of item: " + getNameFromID(order.typeid))
 	clickMyOrders()
-	if order.isbuy:
-		clickPointPNG('imgs/myordersbuying.png', 100, 22 + (20 * position), clicks=1, right=True)
+	if order.bid:
+		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
 	else:
-		clickPointPNG('imgs/myordersselling.png', 100, 22 + (20 * position), clicks=1, right=True)
+		thing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
+	actingPoint = Point(thing.left + 100, thing.top + 22)
+	pyautogui.moveTo(actingPoint.x, actingPoint.y)
+	pyautogui.sleep(0.2)
+	sys.exit()
+
+	
+
+	#this scrolls one order each, the item will be at the bottom of the list (in tenth place, idk how your layout is configured)
+	#todo figure out how many orders fit into lists by measuring the y distance between the export button and "buying" and "selling"
+	if(position > 9):
+		scrollsneeded = position - 9
+		pyautogui.scroll(-130 * scrollsneeded)
+		pyautogui.move(0,)
+	pyautogui.click(button='right', clicks=1)
 	pyautogui.sleep(0.2)
 	pyautogui.move(35, 10)
 	pyautogui.click()
@@ -52,6 +66,8 @@ def changeOrder(order, newprice, position):
 	pyautogui.typewrite(['backspace'])
 	pyautogui.typewrite(str(newprice), interval=0.1)
 	pyautogui.typewrite(['enter'])
+	#reset scroll
+	pyautogui.scroll(100000)
 	order.price = float(newprice)
 	order.issuedate = getEVETimestamp()
 	#todo check if we actually need the return or the passed order is modified

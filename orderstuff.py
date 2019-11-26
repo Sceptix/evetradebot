@@ -27,6 +27,7 @@ class Order:
 		return (getEVETimestamp() - self.issuedate) > 300
 	
 #todo implement check that we actually clicked the right order, ocr
+#todo!!! implement scrolling or dont, because we usually dont have more than ten buyorders
 def cancelBuyOrder(itemhandler):
 	buyorderpos = getOrderPosition(itemhandler.buyorder)
 	print("cancelling buyorder: " + getNameFromID(itemhandler.typeid))
@@ -68,10 +69,10 @@ def refreshOrders(itemhandler):
 		for l in reader:
 			#todo check if indexes are right
 			neworders.append(Order(int(l['typeID']), str2bool(l['bid']), float(l['price']),
-						   int(l['volentered']), int(l['volremaining']), DateUtilParser(l['issuedate']).timestamp()))
+							int(l['volentered']), int(l['volremaining']), DateUtilParser(l['issuedate']).timestamp()))
 	os.remove(logfile)
- 	#the neworder list will contain every order even finished ones, the itemhandler will remove those in its handle func
- 	for oo in oldorders:
+	#the neworder list will contain every order even finished ones, the itemhandler will remove those in its handle func
+	for oo in oldorders:
 		if not any(oo.typeid == no.typeid for no in neworders):
 			oo.finished = True
 			neworders.append(oo)
@@ -94,7 +95,7 @@ def refreshOrderCache(itemhandlerlist):
 			if not so.finished:
 				allorders.append(so)
 	with open('ordercache.csv', 'w') as oc:
-		 pickle.dump(allorders, oc)
+		pickle.dump(allorders, oc)
 
 def getOrderCache():
 	allorders = []
@@ -119,11 +120,11 @@ def getOrderPosition(wantedorder):
 		#todo replace this for x shit with enumerate
 		for x in buylist:
 			if(x.uuid == wantedorder.uuid):
-				return x
+				return (x, len(buylist))
 	else:
-	 	for x in selllist:
+		for x in selllist:
 			if(x.uuid == wantedorder.uuid):
-				return x
+				return (x, len(selllist))
 	print("couldnt find order: " + getNameFromID(wantedorder.typeid) + "  in getorderposition, aborting")
 	sys.exit()
 	
@@ -149,7 +150,7 @@ def sellItem(itemhandler):
 			quantity -= sellorder.volentered
 	else:
 		#we only get here once, because we check if sellorderlist has no
-  		#elements in the ifstatement in the selling part in itemhandler's handle()
+		#elements in the ifstatement in the selling part in itemhandler's handle()
 		quantity = itemhandler.buyorder.volentered - itemhandler.buyorder.volremaining
 	itemhandler.sellorderlist.append(Order(itemhandler.typeid, False, sellPrice, quantity, quantity, getEVETimestamp()))
 	#todo check if we need refreshordercache here
@@ -186,8 +187,6 @@ def checkAndUnderBid(itemhandler):
 					print("bidding for newprice: " + str(newprice))
 					neworder = changeOrder(sellorder, newprice, position)
 					itemhandler.sellorderlist[idx] = neworder
-  
-
 
 #todo implement rebuying items, that have been bought and sold faster, more often than other items
 #general rule: every item can only ever have 2 orders belonging to it
