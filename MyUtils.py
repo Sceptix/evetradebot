@@ -48,11 +48,13 @@ def changeOrder(order, newprice, position):
 	pyautogui.move(35, 10)
 	pyautogui.click()
 	pyautogui.sleep(0.2)
+	#todo, implement ocr check to see if we clicked the right item
 	pyautogui.typewrite(['backspace'])
 	pyautogui.typewrite(str(newprice), interval=0.1)
 	pyautogui.typewrite(['enter'])
 	order.price = float(newprice)
-	order.boughtat = time.time()
+	order.issuedate = getEVETimestamp()
+	#todo check if we actually need the return or the passed order is modified
 	return order
 
 def getEVETimestamp():

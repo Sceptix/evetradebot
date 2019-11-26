@@ -6,6 +6,7 @@ import apistuff
 from dateutil.parser import parse as DateUtilParser
 from apistuff import *
 import uuid
+import pickle
 
 class Order:
 	def __init__(self, typeid: int, bid: bool, price: float, volentered: int, volremaining: int, issuedate: int):
@@ -24,48 +25,17 @@ class Order:
 		return "Order: " + str(self.__dict__) + "\n" 
 	def canChange(self):
 		return (getEVETimestamp() - self.issuedate) > 300
-
-def getOrderPosition(itemhandlerlist, wantedorder):
-	orderlist = []
-	#collect all orders which arent finished
-	for ih in itemhandlerlist:
-		if ih.buyorder is not None and not ih.buyorder.finished:
-			orderlist.append(ih.buyor)
-		if ih.sellorderlist:
-			for so in ih.sellorderlist:
-				if not so.finished:
-					orderlist.append(so)
-	#splitting the orderlist into buy and sellorders
-	buylist = []
-	selllist = []
-	#sort by boughtat, which is also the standard sorting in eve's my orders
-	#todo implement check to look if "expires in" is sorted in the correct direction (oldest first)
-	orderlist.sort(key=lambda x: x.issuedate, reverse=False)
-	for order in orderlist:
-		if(order.isbuy):
-			buylist.append(order)
-		else:
-			selllist.append(order)
-	if (wantedorder.bid):
-		#todo replace this for x shit with enumerate
-		for x in range(len(buylist)):
-			if(buylist[x].uuid == wantedorder.uuid):
-				return x
-	else:
-		for x in range(len(selllist)):
-			if(selllist[x].uuid == wantedorder.uuid):
-				return x
-	print("couldnt find order: " + getNameFromID(order.typeid) + "  in getorderposition, aborting")
-	sys.exit()
-		
-def cancelBuyOrder(itemhandler, itemhandlerlist):
-	buyorderpos = getOrderPosition(itemhandlerlist, itemhandler.buyorder)
+	
+#todo implement check that we actually clicked the right order, ocr
+def cancelBuyOrder(itemhandler):
+	buyorderpos = getOrderPosition(itemhandler.buyorder)
 	print("cancelling buyorder: " + getNameFromID(itemhandler.typeid))
 	clickMyOrders()
 	clickPointPNG('imgs/myordersbuying.png', 100, 22 + (20 * buyorderpos), clicks=1, right=True)
 	pyautogui.sleep(0.2)
 	pyautogui.move(40, 115)
 	pyautogui.click()
+	itemhandler.buyorder = None
 
 def str2bool(string):
 	string = string.strip().lower()
@@ -79,13 +49,13 @@ def str2bool(string):
 		print("wrong type for str2bool, got: " + str(type(string)) + ", aborting")
 		sys.exit()
 
-def refreshOrders(itemhandlerlist):
+#todo change this to work on single itemhandler
+def refreshOrders(itemhandler):
 	oldorders = []
-	for ih in itemhandlerlist:
-		if ih.buyorder is not None:
-			oldorders.append(ih.buyor)
-		if ih.sellorderlist:
-			oldorders += ih.sellorderlist
+	if itemhandler.buyorder is not None:
+		oldorders.append(itemhandler.buyorder)
+	if itemhandler.sellorderlist:
+		oldorders += itemhandler.sellorderlist
 	clickMyOrders()
 	pyautogui.sleep(0.3)
 	clickPointPNG('imgs/myordersexport.png', 10, 10)
@@ -107,14 +77,55 @@ def refreshOrders(itemhandlerlist):
 			neworders.append(oo)
 	#sort each neworder back into their itemhandler
 	for no in neworders:
-		for ih in itemhandlerlist:
-			if(ih.typeid == no.typeid):
-				if no.bid:
-					ih.buyorder = no
-				else:
-					ih.sellorderlist = []
-					ih.sellorderlist.append(no)
+		if(itemhandler.typeid == no.typeid):
+			if no.bid:
+				itemhandler.buyorder = no
+			else:
+				itemhandler.sellorderlist = []
+				itemhandler.sellorderlist.append(no)
 
+#call this every time you handle an itemhandler
+def refreshOrderCache(itemhandlerlist):
+	allorders = []
+	for ih in itemhandlerlist:
+		if ih.buyorder is not None and not ih.buyorder.finished:
+			allorders.append(ih.buyorder)
+		for so in ih.sellorderlist:
+			if not so.finished:
+				allorders.append(so)
+	with open('ordercache.csv', 'w') as oc:
+		 pickle.dump(allorders, oc)
+
+def getOrderCache():
+	allorders = []
+	with open('ordercache.csv', 'r') as oc:
+		allorders = pickle.load(oc)
+	return allorders
+
+def getOrderPosition(wantedorder):
+	orderlist = getOrderCache()
+	#splitting the orderlist into buy and sellorders
+	buylist = []
+	selllist = []
+	#sort by boughtat, which is also the standard sorting in eve's my orders
+	#todo implement check to look if "expires in" is sorted in the correct direction (oldest first)
+	orderlist.sort(key=lambda x: x.issuedate, reverse=False)
+	for order in orderlist:
+		if(order.bid):
+			buylist.append(order)
+		else:
+			selllist.append(order)
+	if (wantedorder.bid):
+		#todo replace this for x shit with enumerate
+		for x in buylist:
+			if(x.uuid == wantedorder.uuid):
+				return x
+	else:
+	 	for x in selllist:
+			if(x.uuid == wantedorder.uuid):
+				return x
+	print("couldnt find order: " + getNameFromID(wantedorder.typeid) + "  in getorderposition, aborting")
+	sys.exit()
 	
 
 def buyItem(itemhandler):
@@ -124,7 +135,7 @@ def buyItem(itemhandler):
 	print("itemhandler initiating initialbuyorder: " + str(itemhandler.typeid) + " , " + str(buyprice) + " , " + str(quantity))
 	buyorder(itemhandler.typeid, buyprice, quantity)
 	itemhandler.buyorder = Order(itemhandler.typeid, True, buyprice, quantity, quantity, getEVETimestamp())
-	#todo replace this saveOrderList()
+	#todo check if we need refreshordercache here
 
 def sellItem(itemhandler):
 	sellPrice = getItemPrices(itemhandler.typeid)[1]
@@ -132,11 +143,16 @@ def sellItem(itemhandler):
 	sellitemininventory(itemhandler.typeid, sellPrice)
 	quantity = 0
 	if itemhandler.buyorder.finished:
-		quantity = itemhandler.buyorder.quantity
+		#adjust the quantity if there are previous sellorders
+		quantity = itemhandler.volume
+		for sellorder in itemhandler.sellorderlist:
+			quantity -= sellorder.volentered
 	else:
+		#we only get here once, because we check if sellorderlist has no
+  		#elements in the ifstatement in the selling part in itemhandler's handle()
 		quantity = itemhandler.buyorder.volentered - itemhandler.buyorder.volremaining
 	itemhandler.sellorderlist.append(Order(itemhandler.typeid, False, sellPrice, quantity, quantity, getEVETimestamp()))
-	#todo replace this saveOrderList()
+	#todo check if we need refreshordercache here
 
 def refreshUnprofitable(itemhandler):
 	prices = getItemPrices(itemhandler.typeid)
@@ -147,25 +163,31 @@ def refreshUnprofitable(itemhandler):
 def checkAndUnderBid(itemhandler):
 	prices = getItemPrices(itemhandler.typeid)
 	#manage buyorders
-	curPrice = prices[0]
-	print("curprice of item called \"" + getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
-	if(curPrice > float(x.price)):
-		print("weve been overbid!")
-		position = getOrderPosition(item, orderlist.copy(), True)
-		newprice = round(curPrice + random.random() / 7 + 0.01, 2)
-		print("bidding for newprice: " + str(newprice))
-		neworder = changeOrder(x, newprice, position)
-		orderlist[idx] = neworder
+	if itemhandler.buyorder is not None and itemhandler.buyorder.canChange():
+		curPrice = prices[0]
+		print("curprice of item called \"" + getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
+		if(curPrice > float(itemhandler.buyorder.price)):
+			print("weve been overbid!")
+			position = getOrderPosition(itemhandler.buyorder)
+			newprice = round(curPrice + random.random() / 7 + 0.01, 2)
+			print("bidding for newprice: " + str(newprice))
+			neworder = changeOrder(itemhandler.buyorder, newprice, position)
+			itemhandler.buyorder = neworder
 	#manage sellorders
-	curPrice = prices[1]
-	print("curprice of item called \"" + item + "\" is: " + str(curPrice))
-	if(curPrice < float(x.price)):
-		print("weve been overbid!")
-		position = getOrderPosition(item, orderlist.copy(), False)
-		newprice = round(curPrice - random.random() / 7 +- 0.01, 2)
-		print("bidding for newprice: " + str(newprice))
-		neworder = changeOrder(x, newprice, position)
-		orderlist[idx] = neworder
+	if itemhandler.sellorderlist:
+		for sellorder, idx in enumerate(itemhandler.sellorderlist):
+			if sellorder.canChange():
+				curPrice = prices[1]
+				print("curprice of item called \"" + getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
+				if(curPrice < float(sellorder.price)):
+					print("weve been overbid!")
+					position = getOrderPosition(sellorder)
+					newprice = round(curPrice - random.random() / 7 - 0.01, 2)
+					print("bidding for newprice: " + str(newprice))
+					neworder = changeOrder(sellorder, newprice, position)
+					itemhandler.sellorderlist[idx] = neworder
+  
+
 
 #todo implement rebuying items, that have been bought and sold faster, more often than other items
 #general rule: every item can only ever have 2 orders belonging to it
@@ -173,16 +195,17 @@ class ItemHandler:
 	def __init__(self, typeid: int, investition: float, volume: int):
 		self.typeid = typeid
 		self.investition = investition
+		#todo check for rounding errors in volume
 		self.volume = volume
 		self.unprofitable = False
 		self.buyorder = None
 		self.sellorderlist = []
 
 	def handle(self):
+		refreshOrders(self)
 		#check unprofitable, cancel buyorder if it is
 		refreshUnprofitable(self)
-		if(self.unprofitable and self.buyorder is not None and self.buyorder.canChange()):
-			cancelBuyOrder(self, #TODO GET ITEMHANDLERLIST HERE SOMEHOW)
+		if(self.unprofitable):
 			return
 		#we place buyorder when there are no orders
 		if not self.buyorder and not self.sellorderlist:
@@ -198,6 +221,9 @@ class ItemHandler:
 		if all(order.finished for order in self.sellorderlist):
 			sellorderlist = []
 		#update prices
+		checkAndUnderBid(self)
+
+
 
 			
 			
