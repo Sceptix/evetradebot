@@ -41,21 +41,36 @@ def changeOrder(order, newprice, position, itemsinlist):
 	print("changing order of item: " + getNameFromID(order.typeid))
 	clickMyOrders()
 	if order.bid:
+		actingpointthing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
 		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-	else:
+		buylisttopleft = Point(thing.left + 74, thing.top + 16)
+		thing = pyautogui.locateOnScreen('imgs/myordersexport.png', confidence=0.9)
+		buylistbottomleft = Point(thing.left + 79, thing.top - 85)
+		listheight = buylistbottomleft.y - buylisttopleft.y	
+ 	else:
+		actingpointthing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
 		thing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
-	actingPoint = Point(thing.left + 100, thing.top + 22)
+		selllisttopleft = Point(thing.left + 74, thing.top + 16)
+		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
+		selllistbottomleft = Point(thing.left + 74, thing.top - 7)
+		listheight = selllistbottomleft.y - selllisttopleft.y
+	#change the 17 y coordinate so its at the very top of the order
+ 	actingPoint = Point(actingpointthing.left + 100, actingpointthing.top + 17)
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
 	pyautogui.sleep(0.2)
-	sys.exit()
-
 	
+
 
 	#this scrolls one order each, the item will be at the bottom of the list (in tenth place, idk how your layout is configured)
 	#todo figure out how many orders fit into lists by measuring the y distance between the export button and "buying" and "selling"
-	if(position > 9):
-		scrollsneeded = position - 9
-		pyautogui.scroll(-130 * scrollsneeded)
+	#itemsfitinlist is the absolute number for how many items fit
+ 	itemsfitinlist = round(listheight / 21)
+ 	if(position >= itemsfitinlist):
+		pagescrollcount = math.floor(position / itemsfitinlist)
+		newitemindex = position - (itemsinlist % itemsfitinlist)
+		pyautogui.scroll(-130 * itemsfitinlist * pagescrollcount)
+		print(itemsfitinlist)
+		sys.exit(0)
 		pyautogui.move(0,)
 	pyautogui.click(button='right', clicks=1)
 	pyautogui.sleep(0.2)

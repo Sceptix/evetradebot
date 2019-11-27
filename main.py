@@ -15,21 +15,9 @@ def saveItemHandlers(itemhandlerlist):
 
 #changeOrder(Order(69, True, 1.53, 1, 1, 1), 2, 13)
 
-thing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
-selllisttopleft = Point(thing.left + 74, thing.top + 16)
-thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-selllistbottomleft = Point(thing.left + 74, thing.top - 7)
-sellinglistheight = selllistbottomleft.y - selllisttopleft.y
+time.sleep(1)
 
-thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-print(thing)
-buylisttopleft = Point(thing.left + 74, thing.top + 16)
-thing = pyautogui.locateOnScreen('imgs/myordersexport.png', confidence=0.9)
-print(thing)
-buylistbottomleft = Point(thing.left + 79, thing.top - 85)
-buylistheight = buylistbottomleft.y - buylisttopleft.y
-print(buylistheight)
-print(sellinglistheight)
+changeorder(Order(1,True, 3.3, 1, 1, 1), 3, 13, 15)
 
 
 sys.exit()
