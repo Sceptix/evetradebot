@@ -4,6 +4,7 @@ import pytesseract
 import os
 import csv
 import random
+import math
 from apistuff import *
 from orderstuff import *
 from pytz import timezone
@@ -58,20 +59,16 @@ def changeOrder(order, newprice, position, itemsinlist):
  	actingPoint = Point(actingpointthing.left + 100, actingpointthing.top + 17)
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
 	pyautogui.sleep(0.2)
-	
-
-
-	#this scrolls one order each, the item will be at the bottom of the list (in tenth place, idk how your layout is configured)
-	#todo figure out how many orders fit into lists by measuring the y distance between the export button and "buying" and "selling"
+	#this scrolls
 	#itemsfitinlist is the absolute number for how many items fit
  	itemsfitinlist = round(listheight / 21)
  	if(position >= itemsfitinlist):
 		pagescrollcount = math.floor(position / itemsfitinlist)
-		newitemindex = position - (itemsinlist % itemsfitinlist)
+		position -= (itemsinlist % itemsfitinlist)
 		pyautogui.scroll(-130 * itemsfitinlist * pagescrollcount)
-		print(itemsfitinlist)
+		print(position)
 		sys.exit(0)
-		pyautogui.move(0,)
+	pyautogui.move(0, 21 * position)
 	pyautogui.click(button='right', clicks=1)
 	pyautogui.sleep(0.2)
 	pyautogui.move(35, 10)
