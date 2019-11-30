@@ -27,12 +27,13 @@ def getItemPrices(itemid):
 	sellorders = []
 	
 	for order in response.json():
-		
-
 		if order['location_id'] == 60003760:
 			if order['is_buy_order'] == True:
 				buyorders.append(float(order['price']))
 			else:
 				sellorders.append(float(order['price']))
-
-	return (sorted(buyorders, reverse=True)[0], sorted(sellorders)[0])
+	try:
+		return (sorted(buyorders, reverse=True)[0], sorted(sellorders)[0])
+	except IndexError:
+		print("soo there either arent any buyorders or sellorders for this given item, thats kinda weird because we don't trade items with 0 volume")
+		sys.exit()

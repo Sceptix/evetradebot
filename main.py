@@ -1,9 +1,12 @@
+#todo make a readme with needed setup config
+#disable agency and daily gifts show up on login
+#make sure regional manager and inventory are big
+
 import pyautogui
 import pytesseract
 import csv
 import os
 from PIL import Image, ImageGrab, ImageFilter, ImageOps
-from MyUtils import *
 from apistuff import *
 from orderstuff import *
 import random
@@ -13,21 +16,23 @@ def saveItemHandlers(itemhandlerlist):
     with open('itemhandlers.csv', 'w') as itemhandlersfile:
         pickle.dump(itemhandlerlist, itemhandlersfile)
 
-#changeOrder(Order(69, True, 1.53, 1, 1, 1), 2, 13)
-
 time.sleep(1)
-
-changeorder(Order(1,True, 3.3, 1, 1, 1), 3, 13, 15)
-
+ih = ItemHandler(17668,1,1)
+ih.buyorder = Order(17668,True,1,1,1,0)
+ihl = []
+ihl.append(ih)
+refreshOrderCache(ihl)
+print(ih.buyorder)
+checkAndUnderBid(ih)
+print(ih.buyorder)
 
 sys.exit()
 
 #close undock window
-
 try:
 	clickPointPNG('imgs/undock.png', 173, 3)
 except AttributeError:
-	print("couldnt close undock window, was pr7obably already closed")
+	print("couldnt close undock window, was probably already closed")
 	
 #create buy orders for items that havent got one yet
 orderlist = []
@@ -47,24 +52,42 @@ if(len(itemhandlerlist) > 8):
     sys.exit()
 
 #underbid order loop logic
-
-#todo implement rebuying earlier, having sell and buy orders of the same type
-#todo implement scrolling in myorders!!!! we may reach points where all 16 orders are sellorders
-#rebuying items that sold out quickly more, not proportional to volume in items.csv
-#todo make it only sell everything, no rebuying in the laste two or three hours, and delete the orders that didnt make it
+#todo make it cancel the sell orders at the very end of day maybe?
 #todo automatic loading from evetrade.space
 #todo implement an ocr check when changing orders!!! (check if it clicked the right order)
-#todo restart game when disconnect
 
 #run for about 9 hours
 tradedaystart = getEVETimestamp()
-while getEVETimestamp() - tradedaystart < 3600 * 9:
+while getEVETimestamp() - tradedaystart < 3600 * 7.5:
 	for itemhandler in itemhandlerlist:
+		cl = pyautogui.locateOnScreen("imgs/connectionlost.png", confidence=0.9)
+		if(cl is not None):
+			#we lost connection, click quit
+			point = Point(cl.left + 169, cl.top + 194)
+			clickPoint(point, 1)
+			#wait six minutes for internet to come back
+			pyautogui.sleep(360)
+			clickPointPNG("imgs/launchgroup.png", 10, 10)
+			#wait for game to start
+			pyautogui.sleep(45)
+			clickxy(470, 420)
+			pyautogui.sleep(45)
+			#close undock window
+			try:
+				clickPointPNG('imgs/undock.png', 173, 3)
+			except AttributeError:
+				print("couldnt close undock window, was probably already closed")
 		refreshOrderCache(itemhandlerlist)
 		print("handling itemhandler: " + getNameFromID(itemhandler.typeid))
-		time.sleep(random.random() * 7)
+		time.sleep(random.random() * 3)
 		itemhandler.handle()
 		if(itemhandler.unprofitable):
 			#cancel unprofitable buyorder
 			cancelBuyOrder(itemhandler)
-		
+while getEVETimestamp() - tradedaystart < 3600 * 9:
+	for idx, ih in enumerate(itemhandlerlist):
+		cancelBuyOrder(itemhandler)
+		if(not itemhandler.sellorderlist):
+			del itemhandlerlist[idx]
+		itemhandler.handle()
+	
