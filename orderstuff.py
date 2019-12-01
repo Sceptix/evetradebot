@@ -11,11 +11,48 @@ import os
 import csv
 import math
 import random
+from main import itemhandlerlist, profitableratio
 from pytz import timezone
 from datetime import datetime
 
 def getEVETimestamp():
 	return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()
+
+class Point:
+    	def __init__(self, xin, yin):
+		self.x = xin
+		self.y = yin
+	def toTuple(self):
+		return (self.x, self.y)
+
+class Area:
+	def __init__(self, xin, yin, win, hin):
+		self.x = xin
+		self.y = yin
+		self.width = win
+		self.height = hin
+	def toTuple(self):
+		return (self.x, self.y, self.width, self.height)
+	def toAbsTuple(self):
+		return (self.x, self.y, self.x + self.width, self.y + self.height)
+
+class Order:
+	def __init__(self, typeid: int, bid: bool, price: float, volentered: int, volremaining: int, issuedate: int):
+		self.typeid = typeid
+		self.bid = bid
+		self.price = price
+		self.volentered = volentered
+		self.volremaining = volremaining
+		self.issuedate = issuedate
+		#i only need to uuid for getting order position, maybe this has more use?
+		self.uuid = uuid.uuid4().hex
+		self.finished = False
+	def __str__(self):
+		return "Order: " + str(self.__dict__)    
+	def __repr__(self):
+		return "Order: " + str(self.__dict__) + "\n" 
+	def canChange(self):
+		return (getEVETimestamp() - self.issuedate) > 300
 
 def clickPoint(point, clicks=1, right=False):
 	pyautogui.moveTo(point.x, point.y)
@@ -27,6 +64,9 @@ def clickPoint(point, clicks=1, right=False):
 
 def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False):
 	thing = pyautogui.locateOnScreen(pngname, confidence=0.9)
+	if thing is None:
+		print("couldnt click png: " + pngname)
+		return
 	point = Point(thing.left + leftoffset, thing.top + topoffset)
 	clickPoint(point, clicks, right)
 
@@ -94,15 +134,15 @@ def changeOrder(order, newprice, position, itemsinlist):
 	order.issuedate = getEVETimestamp()
 
 #todo implement check that we actually clicked the right order, ocr
-def cancelBuyOrder(itemhandler):
-	if(itemhandler.buyorder is None):
-		print("tried to cancel a none buyorder in itemhandler: " + getNameFromID(itemhandler.id))
+def cancelOrder(order):
+	if(order is None):
+		print("tried to cancel a none order")
 		return
-	position, itemsinlist = getOrderPosition(itemhandler.buyorder)
-	print("cancelling buyorder: " + getNameFromID(itemhandler.typeid))
+	position, itemsinlist = getOrderPosition(order)
+	print("cancelling buyorder: " + getNameFromID(order.typeid))
 	clickMyOrders()
 
-	actingPoint, listheight = getAPandLH(True)
+	actingPoint, listheight = getAPandLH(order.bid)
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
 	pyautogui.sleep(0.2)
 	
@@ -117,9 +157,8 @@ def cancelBuyOrder(itemhandler):
 	pyautogui.sleep(0.2)
 	pyautogui.move(40, 115)
 	pyautogui.click()
-	itemhandler.buyorder = None
+	order = None
 
-#todo change this to work on single itemhandler
 def refreshOrders(itemhandler):
 	oldorders = []
 	if itemhandler.buyorder is not None:
@@ -136,9 +175,8 @@ def refreshOrders(itemhandler):
 	with open(logfile) as export:
 		reader = csv.DictReader(export)
 		for l in reader:
-			#todo check if indexes are right
 			neworders.append(Order(int(l['typeID']), str2bool(l['bid']), float(l['price']),
-							int(l['volentered']), int(l['volremaining']), DateUtilParser(l['issuedate']).timestamp()))
+							int(l['volEntered']), int(l['volRemaining']), DateUtilParser(l['issueDate']).timestamp()))
 	os.remove(logfile)
 	#the neworder list will contain every order even finished ones, the itemhandler will remove those in its handle func
 	for oo in oldorders:
@@ -295,7 +333,6 @@ def sellitemininventory(itemid, price):
 					clickxy(mousex, mousey)
 					pyautogui.sleep(5)
 					thing = pyautogui.locateOnScreen('imgs/sellitems.png')
-					#quantityfield = Point( thing.left + thing.width / 2 , thing.top + 60) we dont need quantity, we always sell all items, todo maybe change this when you want multiple orders
 					pricefield = Point( thing.left + thing.width / 2 , thing.top + 80)
 					thing = pyautogui.locateOnScreen('imgs/sellitemsellcancel.png')
 					sellbutton = Point( thing.left + 25, thing.top + 12)
@@ -320,42 +357,6 @@ def sellitemininventory(itemid, price):
 					clickPoint(confirmbutton)
 
 					return
-
-class Point:
-	def __init__(self, xin, yin):
-		self.x = xin
-		self.y = yin
-	def toTuple(self):
-		return (self.x, self.y)
-
-class Area:
-	def __init__(self, xin, yin, win, hin):
-		self.x = xin
-		self.y = yin
-		self.width = win
-		self.height = hin
-	def toTuple(self):
-		return (self.x, self.y, self.width, self.height)
-	def toAbsTuple(self):
-		return (self.x, self.y, self.x + self.width, self.y + self.height)
-
-class Order:
-	def __init__(self, typeid: int, bid: bool, price: float, volentered: int, volremaining: int, issuedate: int):
-		self.typeid = typeid
-		self.bid = bid
-		self.price = price
-		self.volentered = volentered
-		self.volremaining = volremaining
-		self.issuedate = issuedate
-		#i only need to uuid for getting order position, maybe this has more use?
-		self.uuid = uuid.uuid4().hex
-		self.finished = False
-	def __str__(self):
-		return "Order: " + str(self.__dict__)    
-	def __repr__(self):
-		return "Order: " + str(self.__dict__) + "\n" 
-	def canChange(self):
-		return (getEVETimestamp() - self.issuedate) > 300
 
 def str2bool(string):
 	string = string.strip().lower()
@@ -412,9 +413,6 @@ def getOrderPosition(wantedorder):
 	print("couldnt find order: " + getNameFromID(wantedorder.typeid) + "  in getorderposition, aborting")
 	sys.exit()
 	
-
-
-
 def buyItem(itemhandler):
 	buyprice = getItemPrices(itemhandler.typeid)[0]
 	buyprice = round(buyprice + random.random() / 7 + 0.01, 2)
@@ -422,7 +420,7 @@ def buyItem(itemhandler):
 	print("itemhandler initiating initialbuyorder: " + str(itemhandler.typeid) + " , " + str(buyprice) + " , " + str(quantity))
 	buyorder(itemhandler.typeid, buyprice, quantity)
 	itemhandler.buyorder = Order(itemhandler.typeid, True, buyprice, quantity, quantity, getEVETimestamp())
-	#todo check if we need refreshordercache here
+	refreshOrderCache(itemhandlerlist)
 
 def sellItem(itemhandler):
 	sellPrice = getItemPrices(itemhandler.typeid)[1]
@@ -439,13 +437,12 @@ def sellItem(itemhandler):
 		#elements in the ifstatement in the selling part in itemhandler's handle()
 		quantity = itemhandler.buyorder.volentered - itemhandler.buyorder.volremaining
 	itemhandler.sellorderlist.append(Order(itemhandler.typeid, False, sellPrice, quantity, quantity, getEVETimestamp()))
-	#todo check if we need refreshordercache here
+	refreshOrderCache(itemhandlerlist)
 
 def refreshUnprofitable(itemhandler):
 	prices = getItemPrices(itemhandler.typeid)
 	priceratio = prices[1] / prices[0]
-	#todo maybe make a settings file for this
-	itemhandler.unprofitable = (priceratio < 1.2)
+	itemhandler.unprofitable = (priceratio < profitableratio)
 
 def checkAndUnderBid(itemhandler):
 	prices = getItemPrices(itemhandler.typeid)
@@ -461,6 +458,7 @@ def checkAndUnderBid(itemhandler):
 			changeOrder(itemhandler.buyorder, newprice, position, itemsinlist)
 	#manage sellorders
 	#TODO! implement not overbidding yourself when you have 2 sell orders
+	#make all of your own sellorders aim for the exact same price
 	if itemhandler.sellorderlist:
 		for sellorder, idx in enumerate(itemhandler.sellorderlist):
 			if sellorder.canChange():
@@ -507,10 +505,3 @@ class ItemHandler:
 			sellorderlist = []
 		#update prices
 		checkAndUnderBid(self)
-
-
-
-			
-			
-
-

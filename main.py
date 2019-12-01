@@ -33,17 +33,19 @@ try:
 	clickPointPNG('imgs/undock.png', 173, 3)
 except AttributeError:
 	print("couldnt close undock window, was probably already closed")
-	
-#create buy orders for items that havent got one yet
-orderlist = []
-#50 million, todo keep track of this differently
-usercapital = 15 * 10**5
 
+with open('settings.txt', 'r') as settings:
+	for line in settings:
+		(key, val) = line.split()
+		if key is "profitableratio":
+			profitableratio = float(val)
+		elif key is "capital":
+			capital = float(val)
 	
-#itemhandler for every item in items.csv
+#itemhandler for every item in itemhandlers.csv
 itemhandlerlist = []
 
-#buy all the items that havent been bought yet at start of trading day
+#todo delete this after testing, i only need this so it doesnt buy every item after restarting
 with open('itemhandlers.csv', 'r') as itemhandlersfile:
     itemhandlerlist = pickle.load(itemhandlersfile)
 
@@ -68,6 +70,7 @@ while getEVETimestamp() - tradedaystart < 3600 * 7.5:
 			#wait six minutes for internet to come back
 			pyautogui.sleep(360)
 			clickPointPNG("imgs/launchgroup.png", 10, 10)
+			clickPointPNG("imgs/playnow.png", 10, 10)
 			#wait for game to start
 			pyautogui.sleep(45)
 			clickxy(470, 420)
@@ -83,11 +86,19 @@ while getEVETimestamp() - tradedaystart < 3600 * 7.5:
 		itemhandler.handle()
 		if(itemhandler.unprofitable):
 			#cancel unprofitable buyorder
-			cancelBuyOrder(itemhandler)
+			print("cancelling itemhandler: " + getNameFromID(itemhandler.typeid) + "'s buyorder")
+			cancelOrder(itemhandler.buyorder)
 while getEVETimestamp() - tradedaystart < 3600 * 9:
+	print("cancelling all buyorders")
 	for idx, ih in enumerate(itemhandlerlist):
-		cancelBuyOrder(itemhandler)
+		cancelOrder(itemhandler.buyorder)
 		if(not itemhandler.sellorderlist):
+			#stop trading items that have sold out at this point
 			del itemhandlerlist[idx]
 		itemhandler.handle()
-	
+print("cancelling all sellorders")
+for idx, ih in enumerate(itemhandlerlist):
+	for so in ih.sellorderlist:
+		cancelOrder(so)
+print("ended trading day")
+#todo add an earnings report
