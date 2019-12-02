@@ -16,7 +16,7 @@ def saveItemHandlers(itemhandlerlist):
     with open('itemhandlers.csv', 'w') as itemhandlersfile:
         pickle.dump(itemhandlerlist, itemhandlersfile)
 
-time.sleep(1)
+""" time.sleep(1)
 ih = ItemHandler(17668,1,1)
 ih.buyorder = Order(17668,True,1,1,1,0)
 ihl = []
@@ -24,8 +24,10 @@ ihl.append(ih)
 refreshOrderCache(ihl)
 print(ih.buyorder)
 checkAndUnderBid(ih)
-print(ih.buyorder)
+print(ih.buyorder) """
 
+typeids = getAllTypeIDs()
+print(getAllProfitableTypes(typeids))
 sys.exit()
 
 #close undock window
@@ -34,16 +36,9 @@ try:
 except AttributeError:
 	print("couldnt close undock window, was probably already closed")
 
-with open('settings.txt', 'r') as settings:
-	for line in settings:
-		(key, val) = line.split()
-		if key is "profitableratio":
-			profitableratio = float(val)
-		elif key is "capital":
-			capital = float(val)
-	
 #itemhandler for every item in itemhandlers.csv
 itemhandlerlist = []
+
 
 #todo delete this after testing, i only need this so it doesnt buy every item after restarting
 with open('itemhandlers.csv', 'r') as itemhandlersfile:

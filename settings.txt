@@ -1,2 +1,2 @@
 profitableratio 1.2
-capital 
+capital 80000000

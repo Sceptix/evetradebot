@@ -1,17 +1,17 @@
 import time
 import sys
 import pyautogui
-from dateutil.parser import parse as DateUtilParser
-from apistuff import *
-import uuid
-import pickle
-from PIL import Image, ImageGrab, ImageFilter, ImageEnhance, ImageOps
 import pytesseract
 import os
 import csv
 import math
 import random
-from main import itemhandlerlist, profitableratio
+import uuid
+import pickle
+from dateutil.parser import parse as DateUtilParser
+from apistuff import *
+from PIL import Image, ImageGrab, ImageFilter, ImageEnhance, ImageOps
+from main import itemhandlerlist
 from pytz import timezone
 from datetime import datetime
 
@@ -19,7 +19,7 @@ def getEVETimestamp():
 	return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()
 
 class Point:
-    	def __init__(self, xin, yin):
+	def __init__(self, xin, yin):
 		self.x = xin
 		self.y = yin
 	def toTuple(self):
@@ -50,7 +50,7 @@ class Order:
 	def __str__(self):
 		return "Order: " + str(self.__dict__)    
 	def __repr__(self):
-		return "Order: " + str(self.__dict__) + "\n" 
+		return __str__(self)
 	def canChange(self):
 		return (getEVETimestamp() - self.issuedate) > 300
 
@@ -235,7 +235,7 @@ def buyorder(itemid, price, quantity):
 	clickPoint(buyorderpos)
 	pyautogui.sleep(2)
 	thing = pyautogui.locateOnScreen('imgs/buyorderadvanced.png')
-	if thing != None:
+	if thing is not None:
 		advanced = Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
 		clickPoint(advanced)
 		pyautogui.sleep(1)
@@ -442,7 +442,7 @@ def sellItem(itemhandler):
 def refreshUnprofitable(itemhandler):
 	prices = getItemPrices(itemhandler.typeid)
 	priceratio = prices[1] / prices[0]
-	itemhandler.unprofitable = (priceratio < profitableratio)
+	itemhandler.unprofitable = (priceratio < settings.profitableratio)
 
 def checkAndUnderBid(itemhandler):
 	prices = getItemPrices(itemhandler.typeid)
