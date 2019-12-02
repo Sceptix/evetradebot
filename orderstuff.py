@@ -11,7 +11,7 @@ import pickle
 from dateutil.parser import parse as DateUtilParser
 from apistuff import *
 from PIL import Image, ImageGrab, ImageFilter, ImageEnhance, ImageOps
-from main import itemhandlerlist
+from variables import itemhandlerlist
 from pytz import timezone
 from datetime import datetime
 
@@ -50,7 +50,7 @@ class Order:
 	def __str__(self):
 		return "Order: " + str(self.__dict__)    
 	def __repr__(self):
-		return __str__(self)
+		return self.__str__(self)
 	def canChange(self):
 		return (getEVETimestamp() - self.issuedate) > 300
 
@@ -175,7 +175,7 @@ def refreshOrders(itemhandler):
 	with open(logfile) as export:
 		reader = csv.DictReader(export)
 		for l in reader:
-			neworders.append(Order(int(l['typeID']), str2bool(l['bid']), float(l['price']),
+			neworders.append(Order(int(l['typeID']), str(l['bid']) == "True", float(l['price']),
 							int(l['volEntered']), int(l['volRemaining']), DateUtilParser(l['issueDate']).timestamp()))
 	os.remove(logfile)
 	#the neworder list will contain every order even finished ones, the itemhandler will remove those in its handle func
@@ -357,18 +357,6 @@ def sellitemininventory(itemid, price):
 					clickPoint(confirmbutton)
 
 					return
-
-def str2bool(string):
-	string = string.strip().lower()
-	if(isinstance(string, bool)):
-		return string
-	if(string == "True"):
-		return True
-	elif(string == "False"):
-		return False
-	else:
-		print("wrong type for str2bool, got: " + str(type(string)) + ", aborting")
-		sys.exit()
 
 #call this every time you handle an itemhandler
 def refreshOrderCache(itemhandlerlist):
