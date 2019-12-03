@@ -91,13 +91,17 @@ def collectItems():
 
 #todo make this faster with threading or async or using the order pages idk
 def setItemsWeeklyVolumes(simpleitemlist):
-	seperatedlist = [simpleitemlist[x:x+30] for x in range(0, len(simpleitemlist),30)]
+	seperatedlist = [simpleitemlist[x:x+10] for x in range(0, len(simpleitemlist),10)]
 	for itempackage in seperatedlist:
 		urls = []
 		for item in itempackage:
 			urls.append("https://esi.evetech.net/latest/markets/10000002/history/?datasource=tranquility&type_id=" + str(item.typeid))
 		rs = (grequests.get(u) for u in urls)
 		allresponses = grequests.map(rs)
+		while (any(r.status_code != 200 for r in allresponses)):
+			time.sleep(5)
+			rs = (grequests.get(u) for u in urls)
+			allresponses = grequests.map(rs)
 		for response in allresponses:
 			try:
 				rsjson = response.json()
