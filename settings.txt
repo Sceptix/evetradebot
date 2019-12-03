@@ -1,2 +1,3 @@
-profitableratio 1.2
+minmargin 0.2
+maxmargin 1
 capital 80000000

@@ -429,8 +429,8 @@ def sellItem(itemhandler):
 
 def refreshUnprofitable(itemhandler):
 	prices = getItemPrices(itemhandler.typeid)
-	priceratio = prices[1] / prices[0]
-	itemhandler.unprofitable = (priceratio < settings.profitableratio)
+	pricemargin = (prices[1] - prices[0]) / prices[1]
+	itemhandler.unprofitable = (pricemargin < settings.minmargin)
 
 def checkAndUnderBid(itemhandler):
 	prices = getItemPrices(itemhandler.typeid)

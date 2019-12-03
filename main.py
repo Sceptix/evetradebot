@@ -18,32 +18,20 @@ def saveItemHandlers(itemhandlerlist):
         pickle.dump(itemhandlerlist, itemhandlersfile)
 
 simpleitems = collectItems()
-print(simpleitems[47930].__dict__)
-goodratiosimpleitems = []
+goodmarginsimpleitems = []
 for si in simpleitems:
-	if(4 > si.ratio() > variables.profitableratio):
-		goodratiosimpleitems.append(si)
-setItemsWeeklyVolumes(goodratiosimpleitems)
-time.sleep(5)
-for si in goodratiosimpleitems:
+	if(variables.maxmargin > si.margin() > variables.minmargin):
+		if(si.lowestsell - si.highestbuy > 1000):
+			goodmarginsimpleitems.append(si)
+setItemVolumes(goodmarginsimpleitems)
+tradableitems = []
+for si in goodmarginsimpleitems:
 	#apparently this one doesnt get its volume set
-	if(si.typeid == 47930):
-		print(si.__dict__)
-	if(si.volume > 10000):
-		print("id: " + str(si.typeid) + ", ratio: " + str(si.ratio()) + ", volume: " + str(si.volume))
-sys.exit()
+	if(si.volume > 35000):
+		print("id: " + str(si.typeid) + ", margin: " + str(si.margin()) + ", volume: " + str(si.volume))
+		tradableitems.append(si)
 
-time.sleep(1)
-ih = ItemHandler(17668,1,1)
-ih.buyorder = Order(17668,True,1,1,1,0)
-print(ih.buyorder)
-sys.exit()
-ihl = []
-ihl.append(ih)
-refreshOrderCache(ihl)
-print(ih.buyorder)
-checkAndUnderBid(ih)
-print(ih.buyorder)
+#todo make itemhandlers from tradableitems, then save em
 
 
 

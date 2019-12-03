@@ -3,6 +3,8 @@ import requests
 import json
 import time
 import variables
+import asyncio
+from aiohttp import ClientSession
 
 def getItemID(name):
 	response = requests.get("https://www.fuzzwork.co.uk/api/typeid.php?typename=" + name.replace(" ", "%20"))
@@ -48,14 +50,14 @@ class SimpleItem:
 		self.lowestsell = lowestsell
 		self.volume = 0
 
-	def ratio(self):
+	def margin(self):
 		if self.highestbuy == -1 or self.lowestsell == -1:
 			return 0
-		return self.lowestsell / self.highestbuy
+		return (self.lowestsell - self.highestbuy) / self.lowestsell
 
 def collectItems():
 	page = 1
-	pagemultiple = 30
+	pagemultiple = 50
 	allorders = []
 	running = True
 	while running:
@@ -64,11 +66,17 @@ def collectItems():
 			urls.append("https://esi.evetech.net/latest/markets/10000002/orders/?datasource=tranquility&page=" + str(i))
 		rs = (grequests.get(u) for u in urls)
 		allresponses = grequests.map(rs)
+		while (any(r.status_code != 200 for r in allresponses)):
+			print("received non 200 status code")
+			rs = (grequests.get(u) for u in urls)
+			allresponses = grequests.map(rs)
 		for response in allresponses:
+			rsjson = None
 			try:
 				rsjson = response.json()
 			except:
-				print("json decode wasn't perfect")
+				print("json decode in collectitems wasn't perfect")
+				print(response.text)
 			if not rsjson:
 				running = False
 				break
@@ -89,38 +97,39 @@ def collectItems():
 			si.lowestsell = order.price
 	return simpleorderlist
 
-#todo make this faster with threading or async or using the order pages idk
-def setItemsWeeklyVolumes(simpleitemlist):
-	seperatedlist = [simpleitemlist[x:x+10] for x in range(0, len(simpleitemlist),10)]
-	for itempackage in seperatedlist:
-		urls = []
-		for item in itempackage:
-			urls.append("https://esi.evetech.net/latest/markets/10000002/history/?datasource=tranquility&type_id=" + str(item.typeid))
-		rs = (grequests.get(u) for u in urls)
-		allresponses = grequests.map(rs)
-		while (any(r.status_code != 200 for r in allresponses)):
-			time.sleep(5)
-			rs = (grequests.get(u) for u in urls)
-			allresponses = grequests.map(rs)
-		for response in allresponses:
+async def fetch(item, session):
+	async with session.get("https://esi.evetech.net/latest/markets/10000002/history/?datasource=tranquility&type_id=" + str(item.typeid)) as response:
+		repo = await response.read()
+		try:
+			rsjson = json.loads(repo)
+		except:
+			return item
+		vol = 0
+		for day in range(len(rsjson) - 14, len(rsjson)):
 			try:
-				rsjson = response.json()
+				vol += rsjson[day]['volume']
 			except:
-				print("json decode wasn't perfect")
-			if not rsjson:
-				return 0
-			vol = 0
-			for idx in range(0,8):
-				try:
-					vol += int(rsjson[idx]['volume'])
-				except:
-					pass
-			item.volume = vol
+				break
+		item.volume = int(vol / 14)
+		return item
 
-	return simpleitemlist
 
-# station trading api routine:
-#     get all order pages
-#     in there are orders with itemtypes
-#     collect for all item types
-#     then get volume for all item types where margin is big enough
+async def getResponses(simpleitemlist):
+	tasks = []
+
+	# Fetch all responses within one Client session,
+	# keep connection alive for all requests.
+	async with ClientSession() as session:
+		for i in simpleitemlist:
+			task = asyncio.ensure_future(fetch(i, session))
+			tasks.append(task)
+
+		items = await asyncio.gather(*tasks)
+		simpleitemlist.sort(key=lambda x: x.volume, reverse=True)
+		return items
+
+def setItemVolumes(simpleitemslist):
+	loop = asyncio.get_event_loop()
+	future = asyncio.ensure_future(getResponses(simpleitemslist))
+	simpleitemslist = loop.run_until_complete(future)
+	loop.close
