@@ -465,6 +465,7 @@ def checkAndUnderBid(itemhandler):
 class ItemHandler:
 	def __init__(self, typeid: int, investition: float, volume: int):
 		self.typeid = typeid
+		#todo use investition for capital accounting
 		self.investition = investition
 		#todo check for rounding errors in volume
 		self.volume = volume

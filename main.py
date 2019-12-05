@@ -13,10 +13,6 @@ from variables import itemhandlerlist
 import random
 import pickle
 
-def saveItemHandlers(itemhandlerlist):
-    with open('itemhandlers.csv', 'w') as itemhandlersfile:
-        pickle.dump(itemhandlerlist, itemhandlersfile)
-
 simpleitems = collectItems()
 goodmarginsimpleitems = []
 for si in simpleitems:
@@ -27,13 +23,29 @@ setItemVolumes(goodmarginsimpleitems)
 tradableitems = []
 for si in goodmarginsimpleitems:
 	#apparently this one doesnt get its volume set
-	if(si.volume > 35000):
+	if(si.volume > 30000):
 		print("id: " + str(si.typeid) + ", margin: " + str(si.margin()) + ", volume: " + str(si.volume))
 		tradableitems.append(si)
 
+#todo delete this after testing, i only need this so it doesnt buy every item after restarting
+with open('itemhandlers.csv', 'rb') as itemhandlersfile:
+	itemhandlerlist = pickle.load(itemhandlersfile)
+
 #todo make itemhandlers from tradableitems, then save em
+volumesum = 0
+for ti in tradableitems:
+	volumesum += ti.volume
+for ti in tradableitems:
+	if not(any(ti.typeid == ih.typehd for ih in itemhandlerlist)):
+		capitalpercentage = ti.volume / volumesum
+		investition = variables.capital * capitalpercentage
+		buyprice = getItemPrices(ti.typeid)[0]
+		volume = math.floor(investition / buyprice)
+		itemhandlerlist.append(ItemHandler(ti.typeid, investition, volume))
 
-
+#todo delete this after testing, i only need this so it doesnt buy every item after restarting
+with open('itemhandlers.csv', 'wb') as itemhandlersfile:
+	pickle.dump(itemhandlerlist, itemhandlersfile)
 
 #close undock window
 try:
@@ -41,14 +53,9 @@ try:
 except AttributeError:
 	print("couldnt close undock window, was probably already closed")
 
-
-#todo delete this after testing, i only need this so it doesnt buy every item after restarting
-with open('itemhandlers.csv', 'r') as itemhandlersfile:
-    itemhandlerlist = pickle.load(itemhandlersfile)
-
 if(len(itemhandlerlist) > 8):
-    print("more than 8 item handlers wont work with an alpha account")
-    sys.exit()
+	print("more than 8 item handlers wont work with an alpha account")
+	sys.exit()
 
 #underbid order loop logic
 #todo make it cancel the sell orders at the very end of day maybe?
