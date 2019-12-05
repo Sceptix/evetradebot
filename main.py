@@ -9,6 +9,7 @@ import os
 from PIL import Image, ImageGrab, ImageFilter, ImageOps
 from apistuff import *
 from orderstuff import *
+from common import *
 from variables import itemhandlerlist
 import random
 import pickle
@@ -31,16 +32,20 @@ for si in goodmarginsimpleitems:
 with open('itemhandlers.csv', 'rb') as itemhandlersfile:
 	itemhandlerlist = pickle.load(itemhandlersfile)
 
-#todo make itemhandlers from tradableitems, then save em
 volumesum = 0
 for ti in tradableitems:
 	volumesum += ti.volume
 for ti in tradableitems:
-	if not(any(ti.typeid == ih.typehd for ih in itemhandlerlist)):
+    if(len(itemhandlerlist) == 8):
+		break
+	if not(any(ti.typeid == ih.typeid for ih in itemhandlerlist)):
 		capitalpercentage = ti.volume / volumesum
 		investition = variables.capital * capitalpercentage
-		buyprice = getItemPrices(ti.typeid)[0]
-		volume = math.floor(investition / buyprice)
+		buyprice = getGoodPrices(ih.typeid)[0]
+		if(buyprice == -1):
+			print("Warning, not adding itemhandler: " + getNameFromID(itemhandler.itemid) + " because there is no good price.")
+			continue
+		volume = math.floor(investition / topbuyorder.price)
 		itemhandlerlist.append(ItemHandler(ti.typeid, investition, volume))
 
 #todo delete this after testing, i only need this so it doesnt buy every item after restarting
@@ -57,33 +62,34 @@ if(len(itemhandlerlist) > 8):
 	print("more than 8 item handlers wont work with an alpha account")
 	sys.exit()
 
+def connectionLost():
+	cl = pyautogui.locateOnScreen("imgs/connectionlost.png", confidence=0.9)
+	if(cl is not None):
+		#we lost connection, click quit
+		point = Point(cl.left + 169, cl.top + 194)
+		clickPoint(point, 1)
+		#wait six minutes for internet to come back
+		pyautogui.sleep(360)
+		clickPointPNG("imgs/launchgroup.png", 10, 10)
+		clickPointPNG("imgs/playnow.png", 10, 10)
+		#wait for game to start
+		pyautogui.sleep(45)
+		clickxy(470, 420)
+		pyautogui.sleep(45)
+		#close undock window
+		try:
+			clickPointPNG('imgs/undock.png', 173, 3)
+		except AttributeError:
+			print("couldnt close undock window, was probably already closed")
+
 #underbid order loop logic
-#todo make it cancel the sell orders at the very end of day maybe?
-#todo automatic loading from evetrade.space
 #todo implement an ocr check when changing orders!!! (check if it clicked the right order)
 
 #run for about 9 hours
 tradedaystart = getEVETimestamp()
 while getEVETimestamp() - tradedaystart < 3600 * 7.5:
 	for itemhandler in itemhandlerlist:
-		cl = pyautogui.locateOnScreen("imgs/connectionlost.png", confidence=0.9)
-		if(cl is not None):
-			#we lost connection, click quit
-			point = Point(cl.left + 169, cl.top + 194)
-			clickPoint(point, 1)
-			#wait six minutes for internet to come back
-			pyautogui.sleep(360)
-			clickPointPNG("imgs/launchgroup.png", 10, 10)
-			clickPointPNG("imgs/playnow.png", 10, 10)
-			#wait for game to start
-			pyautogui.sleep(45)
-			clickxy(470, 420)
-			pyautogui.sleep(45)
-			#close undock window
-			try:
-				clickPointPNG('imgs/undock.png', 173, 3)
-			except AttributeError:
-				print("couldnt close undock window, was probably already closed")
+		connectionLost()
 		refreshOrderCache(itemhandlerlist)
 		print("handling itemhandler: " + getNameFromID(itemhandler.typeid))
 		time.sleep(random.random() * 3)
@@ -103,6 +109,7 @@ while getEVETimestamp() - tradedaystart < 3600 * 9:
 print("cancelling all sellorders")
 for idx, ih in enumerate(itemhandlerlist):
 	for so in ih.sellorderlist:
+		print("Couldn't finish selling item called: " + getNameFromID(so.typeid))
 		cancelOrder(so)
 print("ended trading day")
 #todo add an earnings report

@@ -7,5 +7,7 @@ with open('settings.txt', 'r') as settings:
 			maxmargin = float(val)
 		elif key == "capital":
 			capital = float(val)
+		elif key == "minquantity":
+			minquantity = float(val)
 
 itemhandlerlist = []

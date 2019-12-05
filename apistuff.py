@@ -1,41 +1,22 @@
 import grequests
-import requests
 import json
 import time
 import variables
 import asyncio
+from common import *
 from aiohttp import ClientSession
 
 def getItemID(name):
-	response = requests.get("https://www.fuzzwork.co.uk/api/typeid.php?typename=" + name.replace(" ", "%20"))
-	return int(response.json()['typeID'])
+	with ClientSession() as session:
+		with session.get("https://www.fuzzwork.co.uk/api/typeid.php?typename=" + str(name)) as response:
+			rsjson = json.loads(response)
+			return str(rsjson['typeID'])
 
-def getNameFromID(id):
-	response = requests.get("https://www.fuzzwork.co.uk/api/typeid.php?typeid=" + str(id))
-	return str(response.json()['typeName'])
-
-#returns the highest buy and lowest sell price of an item with a given id
-def getItemPrices(itemid):
-	#todo add try catch
-	response = requests.get("https://esi.evetech.net/latest/markets/10000002/orders/?datasource=tranquility&type_id=" + str(itemid))
-	if response.status_code != 200 or isinstance(response.json(), str):
-		time.sleep(30)
-		response = requests.get("https://esi.evetech.net/latest/markets/10000002/orders/?datasource=tranquility&type_id=" + str(itemid))
-
-	buyorders = []
-	sellorders = []
-	
-	for order in response.json():
-		if order['location_id'] == 60003760:
-			if order['is_buy_order']:
-				buyorders.append(float(order['price']))
-			else:
-				sellorders.append(float(order['price']))
-	try:
-		return (sorted(buyorders, reverse=True)[0], sorted(sellorders)[0])
-	except IndexError:
-		print("itemid: " + str(itemid) + " had no buy or no sell orders, returning none")
-		return None
+def getNameFromID(itemid):
+	with ClientSession() as session:
+		with session.get("https://www.fuzzwork.co.uk/api/typeid.php?typeid=" + str(itemid)) as response:
+			rsjson = json.loads(response)
+			return str(rsjson['typeName'])
 
 class SimpleOrder:
 	def __init__(self, typeid: int, is_buy_order: bool, price: float):
@@ -117,8 +98,7 @@ async def fetch(item, session):
 async def getResponses(simpleitemlist):
 	tasks = []
 
-	# Fetch all responses within one Client session,
-	# keep connection alive for all requests.
+	#keep connection alive for all requests
 	async with ClientSession() as session:
 		for i in simpleitemlist:
 			task = asyncio.ensure_future(fetch(i, session))
