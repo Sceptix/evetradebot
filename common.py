@@ -1,5 +1,12 @@
 import orderstuff
 import pyautogui
+import sys
+import apistuff as api
+from PIL import Image, ImageGrab, ImageFilter, ImageEnhance, ImageOps
+import pytesseract
+from difflib import SequenceMatcher
+from pytz import timezone
+from datetime import datetime
 
 def getEVETimestamp():
     return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()
@@ -58,7 +65,15 @@ class ItemHandler:
 			return
 		#we place buyorder when there are no orders
 		if not self.buyorder and not self.sellorderlist:
-			buyItem(self)
+			orderstuff.buyItem(self)
+
+			#todo delete this after testing, i only need this so it doesnt buy every item after restarting
+			with open('itemhandlers.csv', 'rb') as itemhandlersfile:
+				try:
+					itemhandlerlist = pickle.load(itemhandlersfile)
+				except EOFError:
+					pass
+
 			return
 		#we only sell half of bought once per item cycle
 		if self.buyorder is not None:
@@ -72,6 +87,12 @@ class ItemHandler:
 			sellorderlist = []
 		#update prices
 		orderstuff.checkAndUnderBid(self)
+		#todo delete this after testing, i only need this so it doesnt buy every item after restarting
+		with open('itemhandlers.csv', 'rb') as itemhandlersfile:
+			try:
+				itemhandlerlist = pickle.load(itemhandlersfile)
+			except EOFError:
+				pass
 
 
 def clickPoint(point, clicks=1, right=False):
@@ -113,6 +134,9 @@ def search_market(item):
 	pyautogui.moveTo(pos.left + pos.width / 2, pos.top + pos.height / 2)
 	pyautogui.click(pos.left + pos.width / 2, pos.top + pos.height / 2)
 
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
 def grabandocr(box, pricesonly=False, treshfilter=False):
 	if isinstance(box, Area):
 		box = box.toAbsTuple()
@@ -138,8 +162,8 @@ def grabandocr(box, pricesonly=False, treshfilter=False):
 	ocr = ocr.lower().split("\n",1)[1]
 	return ocr
 
-def openItem(itemid):
-	itemname = getNameFromID(itemid)
+def openItem(typeid):
+	itemname = api.getNameFromID(typeid)
 	clickDetails()
 	thing = pyautogui.locateOnScreen('imgs/browselistleft.png', 0.6)
 	thing2 = pyautogui.locateOnScreen('imgs/search.png')
@@ -152,15 +176,33 @@ def openItem(itemid):
 	for _ in range(5):
 
 		ocr = grabandocr(searchareacapturepos)
-
-		for s in ocr.splitlines()[1:]:
-			if len(s.split()[-1]) > 1:
-				if(s.split()[-1][:5] in itemname.lower()):
-					offsetpos = searchareacapturepos
-					mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
-					mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
-					clickxy(mousex, mousey)
-					return
+		ocrlines = ocr.splitlines()[1:]
+		stringdict = {}
+		curstring = ""
+		for idx, s in enumerate(ocrlines):
+			s = s.lower()
+			#if len(s.split()) > 11:
+			print(s)
+			if(len(s.split()) <= 11 or len(s.split()[-1]) < 2):
+				if curstring:
+					stringdict[curstring.strip()] = idx - 1
+				curstring = ""
+			else:
+				curstring += s.split()[-1] + " "
+		stringdict[curstring.strip()] = idx - 1
+		highestsim = -1
+		bestidx = 0
+		for s in stringdict:
+			cursim = similar(itemname.lower(), s)
+			if cursim > highestsim:
+				highestsim = cursim
+				bestidx = stringdict[s]
+		s = ocrlines[bestidx]
+		offsetpos = searchareacapturepos
+		mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
+		mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
+		clickxy(mousex, mousey)
+		return
 
 		#we only get here if it didnt find an item: the item must have been in a collapsed category
 		for s in ocr.splitlines()[1:]:

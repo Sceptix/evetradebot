@@ -1,7 +1,6 @@
 import time
 import sys
 import pyautogui
-import pytesseract
 import os
 import csv
 import math
@@ -9,34 +8,32 @@ import random
 import pickle
 from collections import defaultdict
 from dateutil.parser import parse as DateUtilParser
-from apistuff import *
-from common import *
-from PIL import Image, ImageGrab, ImageFilter, ImageEnhance, ImageOps
-from variables import itemhandlerlist
-from pytz import timezone
-from datetime import datetime
+import apistuff as api
+import common as cm
+from variables import *
+
 
 def getAPandLH(bid):
 	if bid:
 		actingpointthing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
 		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-		buylisttopleft = Point(thing.left + 74, thing.top + 16)
+		buylisttopleft = cm.Point(thing.left + 74, thing.top + 16)
 		thing = pyautogui.locateOnScreen('imgs/myordersexport.png', confidence=0.9)
-		buylistbottomleft = Point(thing.left + 79, thing.top - 85)
+		buylistbottomleft = cm.Point(thing.left + 79, thing.top - 85)
 		listheight = buylistbottomleft.y - buylisttopleft.y	+ 2
 	else:
 		actingpointthing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
 		thing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
-		selllisttopleft = Point(thing.left + 74, thing.top + 16)
+		selllisttopleft = cm.Point(thing.left + 74, thing.top + 16)
 		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-		selllistbottomleft = Point(thing.left + 74, thing.top - 7)
+		selllistbottomleft = cm.Point(thing.left + 74, thing.top - 7)
 		listheight = selllistbottomleft.y - selllisttopleft.y + 2
-	actingPoint = Point(actingpointthing.left + 100, actingpointthing.top + 17)
+	actingPoint = cm.Point(actingpointthing.left + 100, actingpointthing.top + 17)
 	return actingPoint, listheight
 
 def changeOrder(order, newprice, position, itemsinlist):
-	print("changing order of item: " + getNameFromID(order.typeid))
-	clickMyOrders()
+	print("changing order of item: " + api.getNameFromID(order.typeid))
+	cm.clickMyOrders()
 	actingPoint, listheight = getAPandLH(order.bid)
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
 	pyautogui.sleep(0.2)
@@ -63,7 +60,7 @@ def changeOrder(order, newprice, position, itemsinlist):
 	pyautogui.moveTo(actingPoint.x + 10, actingPoint.y + 10)
 	pyautogui.scroll(100000)
 	order.price = float(newprice)
-	order.issuedate = getEVETimestamp()
+	order.issuedate = cm.getEVETimestamp()
 
 #todo implement check that we actually clicked the right order, ocr
 def cancelOrder(order):
@@ -71,8 +68,8 @@ def cancelOrder(order):
 		print("tried to cancel a none order")
 		return
 	position, itemsinlist = getOrderPosition(order)
-	print("cancelling buyorder: " + getNameFromID(order.typeid))
-	clickMyOrders()
+	print("cancelling buyorder: " + api.getNameFromID(order.typeid))
+	cm.clickMyOrders()
 
 	actingPoint, listheight = getAPandLH(order.bid)
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
@@ -105,18 +102,23 @@ def refreshOrders(itemhandler):
 		oldorders.append(itemhandler.buyorder)
 	if itemhandler.sellorderlist:
 		oldorders += itemhandler.sellorderlist
-	clickMyOrders()
+	cm.clickMyOrders()
 	pyautogui.sleep(0.3)
-	clickPointPNG('imgs/myordersexport.png', 10, 10)
+	cm.clickPointPNG('imgs/myordersexport.png', 10, 10)
 	pyautogui.sleep(1)
+	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
+	if thing is not None:
+		okbutton = cm.Point(thing.left + 169, thing.top + 194)
+		cm.clickPoint(okbutton)
+		return
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	neworders = []
 	with open(logfile) as export:
 		reader = csv.DictReader(export)
 		for l in reader:
-			neworders.append(Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
-							int(l['volEntered']), int(l['volRemaining']), DateUtilParser(l['issueDate']).timestamp()))
+			neworders.append(cm.Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
+							int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp()))
 	os.remove(logfile)
 	newfromoldorders = []
 	#the newfromoldorders list will contain every order even finished ones, the itemhandler will remove those in its handle func
@@ -138,49 +140,49 @@ def refreshOrders(itemhandler):
 				itemhandler.buyorder = nfo
 			else:
 				itemhandler.sellorderlist.append(nfo)
-	refreshOrderCache()
+	refreshOrderCache(itemhandlerlist)
 
-def sellitemininventory(itemid, price):
-	item = getNameFromID(itemid)
-	clickPointPNG('imgs/inventorytopright.png', 0, 25, 2)
+def sellitemininventory(typeid, price):
+	item = api.getNameFromID(typeid)
+	cm.clickPointPNG('imgs/inventorytopright.png', 0, 25, 2)
 	pyautogui.typewrite(['backspace'])
 	pyautogui.typewrite(item, interval=0.1)
 
 	thing = pyautogui.locateOnScreen('imgs/inventoryitemhangar.png')
-	inventorylist = Area(thing.left + 25, thing.top + 70, 1000, 250)
+	inventorylist = cm.Area(thing.left + 25, thing.top + 70, 1000, 250)
 
 	pyautogui.sleep(1)
 
 	box = inventorylist.toAbsTuple()
-	ocr = grabandocr(box)
+	ocr = cm.grabandocr(box)
 
 	for s in ocr.splitlines()[1:]:
 		if(s.split()[-1][:5] in item.lower()):
 			offsetpos = inventorylist
 			mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
 			mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
-			clickxy(mousex, mousey, clicks=1, right=True)
+			cm.clickxy(mousex, mousey, clicks=1, right=True)
 			pyautogui.sleep(0.2)
 
 			box = (mousex + 15,mousey + 2 ,mousex + 15 + 135, mousey + 3 + 200)
-			ocr = grabandocr(box)
+			ocr = cm.grabandocr(box)
 
 			for s in ocr.splitlines()[1:]:
 				if(s.split()[-1] == "sell"):
 					mousex = mousex + 18 + int(s.split()[6]) / 4 + 5
 					mousey = mousey + 3 + int(s.split()[7]) / 4 + 5
-					clickxy(mousex, mousey)
+					cm.clickxy(mousex, mousey)
 					pyautogui.sleep(5)
 					thing = pyautogui.locateOnScreen('imgs/sellitems.png')
-					pricefield = Point( thing.left + thing.width / 2 , thing.top + 80)
+					pricefield = cm.Point( thing.left + thing.width / 2 , thing.top + 80)
 					thing = pyautogui.locateOnScreen('imgs/sellitemsellcancel.png')
-					sellbutton = Point( thing.left + 25, thing.top + 12)
+					sellbutton = cm.Point( thing.left + 25, thing.top + 12)
 					thing = pyautogui.locateOnScreen('imgs/sellitemduration.png')
-					durationfield = Point( thing.left - 50 , thing.top + 28)
+					durationfield = cm.Point( thing.left - 50 , thing.top + 28)
 
 					#set duration to 3 months
-					clickPoint(durationfield)
-					clickxy(durationfield.x, durationfield.y + 145)
+					cm.clickPoint(durationfield)
+					cm.clickxy(durationfield.x, durationfield.y + 145)
 
 					#set price
 					pyautogui.moveTo(pricefield.x, pricefield.y)
@@ -189,56 +191,56 @@ def sellitemininventory(itemid, price):
 					pyautogui.typewrite(['backspace'])
 					pyautogui.typewrite(str(price), interval=0.1)
 
-					clickPoint(sellbutton)
+					cm.clickPoint(sellbutton)
 					pyautogui.sleep(0.5)
 					thing = pyautogui.locateOnScreen('imgs/sellitemconfirm.png')
-					confirmbutton = Point( thing.left +145 , thing.top + 193)
-					clickPoint(confirmbutton)
+					confirmbutton = cm.Point( thing.left +145 , thing.top + 193)
+					cm.clickPoint(confirmbutton)
 
 					return
 
-def buyorder(itemid, price, quantity):
-	clickDetails()
-	openItem(itemid)
+def buyorder(typeid, price, quantity):
+	cm.clickDetails()
+	cm.openItem(typeid)
 	pyautogui.sleep(3)
 	thing = pyautogui.locateOnScreen('imgs/placebuyorder.png')
-	buyorderpos = Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
-	clickPoint(buyorderpos)
+	buyorderpos = cm.Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
+	cm.clickPoint(buyorderpos)
 	pyautogui.sleep(2)
 	thing = pyautogui.locateOnScreen('imgs/buyorderadvanced.png')
 	if thing is not None:
-		advanced = Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
-		clickPoint(advanced)
+		advanced = cm.Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
+		cm.clickPoint(advanced)
 		pyautogui.sleep(1)
 	#make sure buy order is set to advanced
 	#TODO implement advanced check
 	thing = pyautogui.locateOnScreen('imgs/buyorderoriginpoint.png')
-	bidpricefield = Point( thing.left + 143 , thing.top + 33)
-	quantityfield = Point( thing.left + 143 , thing.top + 169)
-	duration = Point( thing.left + 143 , thing.top + 190)
-	threemonths = Point( thing.left + 143 , thing.top + 332)
+	bidpricefield = cm.Point( thing.left + 143 , thing.top + 33)
+	quantityfield = cm.Point( thing.left + 143 , thing.top + 169)
+	duration = cm.Point( thing.left + 143 , thing.top + 190)
+	threemonths = cm.Point( thing.left + 143 , thing.top + 332)
 	buything = pyautogui.locateOnScreen('imgs/buyandcancel.png')
-	buybutton = Point( buything.left + 25 , buything.top + 7)
-	clickPoint(bidpricefield, 2)
+	buybutton = cm.Point( buything.left + 25 , buything.top + 7)
+	cm.clickPoint(bidpricefield, 2)
 	pyautogui.sleep(0.1)
 	pyautogui.typewrite(['backspace'])
 	pyautogui.typewrite(str(price), interval=0.1)
-	clickPoint(quantityfield, 2)
+	cm.clickPoint(quantityfield, 2)
 	pyautogui.sleep(0.1)
 	pyautogui.typewrite(['backspace'])
 	pyautogui.typewrite(str(quantity), interval=0.1)
-	clickPoint(duration)
-	clickPoint(threemonths)
-	clickPoint(buybutton, 1)
+	cm.clickPoint(duration)
+	cm.clickPoint(threemonths)
+	cm.clickPoint(buybutton, 1)
 	pyautogui.sleep(0.6)
 	thing = pyautogui.locateOnScreen('imgs/confirmorder.png')
-	confirmyes = Point( thing.left + 149 , thing.top + 197)
-	clickPoint(confirmyes)
+	confirmyes = cm.Point( thing.left + 149 , thing.top + 197)
+	cm.clickPoint(confirmyes)
 
 #returns the top six buy and sell orders
-def getTopOrders(itemid):
-	openItem(itemid)
-	clickPointPNG("exporttofile", 5, 5)
+def getTopOrders(typeid):
+	cm.openItem(typeid)
+	cm.clickPointPNG("imgs/exporttofile.png", 5, 5)
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	buyorders, sellorders = [], []
@@ -247,7 +249,7 @@ def getTopOrders(itemid):
 		for l in reader:
 			if(int(l['jumps']) != 0):
 				continue
-			o = Order(itemid, int(l['orderID']), str(l['bid']) == "True", float(l['price']), int(l['volEntered']), int(l['volRemaining']), DateUtilParser(l['issueDate']).timestamp())
+			o = cm.Order(typeid, int(l['orderID']), str(l['bid']) == "True", float(l['price']), int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp())
 			if(o.bid):
 				buyorders.append(o)
 			else:
@@ -300,19 +302,18 @@ def getOrderPosition(wantedorder):
 		for idx, x in enumerate(selllist):
 			if(areOrdersTheSame(x, wantedorder)):
 				return (idx, len(selllist))
-	print("couldnt find order: " + getNameFromID(wantedorder.typeid) + "  in getorderposition, aborting")
+	print("couldnt find order: " + api.getNameFromID(wantedorder.typeid) + "  in getorderposition, aborting")
 	sys.exit()
 	
 #this is to avoid over or underbidding somebody with low quantity
 #if overbid is set to false, we dont add the random ammount
-def getGoodPrices(itemid, overbid=True):
-	refreshOrderCache()
-	minquantity = variables.minquantity
-	toporders = getTopOrders(itemid)
+def getGoodPrices(typeid, overbid=True):
+	refreshOrderCache(itemhandlerlist)
+	toporders = getTopOrders(typeid)
 	buyprice, sellprice = -1, -1
 	highestbidderflag = False
 	for o in toporders[0]:
-		if(o.quantity > minquantity):
+		if(o.volremaining > minquantity):
 			if overbid:
 				buyprice = round(o.price + random.random() / 7 + 0.01, 2)
 			else:
@@ -320,7 +321,7 @@ def getGoodPrices(itemid, overbid=True):
 			break
 	#highest bidder checks for sell orders
 	for o in toporders[1]:
-		if(o.quantity > minquantity):
+		if(o.volremaining > minquantity):
 			highestbidderflag = any(areOrdersTheSame(o, co) for co in getOrderCache())
 			if overbid:
 				sellprice = round(o.price - random.random() / 7 - 0.01, 2)
@@ -331,21 +332,21 @@ def getGoodPrices(itemid, overbid=True):
 
 def buyItem(itemhandler):
 	quantity = itemhandler.volume
-	buyprice = getGoodPrices(itemhandler.itemid)[0]
+	buyprice = getGoodPrices(itemhandler.typeid)[0]
 	if(buyprice == -1):
-		print("Warning, not buying item: " + getNameFromID(itemhandler.itemid) + " because there is no good price.")
+		print("Warning, not buying item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
 		return
 	print("itemhandler initiating initialbuyorder: " + str(itemhandler.typeid) + " , " + str(buyprice) + " , " + str(quantity))
 	buyorder(itemhandler.typeid, buyprice, quantity)
-	itemhandler.buyorder = Order(itemhandler.typeid, -1, True, buyprice, quantity, quantity, getEVETimestamp())
+	itemhandler.buyorder = cm.Order(itemhandler.typeid, -1, True, buyprice, quantity, quantity, cm.getEVETimestamp())
 	#this line sets the orderid from -1 to something else
 	refreshOrders(itemhandler)
 	refreshOrderCache(itemhandlerlist)
 
 def sellItem(itemhandler):
-	sellPrice = getGoodPrices(itemhandler.itemid)[1]
+	sellPrice = getGoodPrices(itemhandler.typeid)[1]
 	if(sellprice == -1):
-		print("Warning, not selling item: " + getNameFromID(itemhandler.itemid) + " because there is no good price.")
+		print("Warning, not selling item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
 		return
 	sellitemininventory(itemhandler.typeid, sellPrice)
 	quantity = 0
@@ -358,25 +359,25 @@ def sellItem(itemhandler):
 		#we only get here once, because we check if sellorderlist has no
 		#elements in the ifstatement in the selling part in itemhandler's handle()
 		quantity = itemhandler.buyorder.volentered - itemhandler.buyorder.volremaining
-	itemhandler.sellorderlist.append(Order(itemhandler.typeid, -1, False, sellPrice, quantity, quantity, getEVETimestamp()))
+	itemhandler.sellorderlist.append(cm.Order(itemhandler.typeid, -1, False, sellPrice, quantity, quantity, cm.getEVETimestamp()))
 	#this line sets the orderid from -1 to something else
 	refreshOrders(itemhandler)
 	refreshOrderCache(itemhandlerlist)
 
 def refreshUnprofitable(itemhandler):
-	prices = getGoodPrices(itemhandler.itemid, overbid=False)
+	prices = getGoodPrices(itemhandler.typeid, overbid=False)
 	pricemargin = (prices[1] - prices[0]) / prices[1]
-	itemhandler.unprofitable = (pricemargin < settings.minmargin)
+	itemhandler.unprofitable = (pricemargin < minmargin)
 
 def checkAndUnderBid(itemhandler):
-	prices = getGoodPrices(itemhandler.itemid, overbid=False)
+	prices = getGoodPrices(itemhandler.typeid, overbid=False)
 	#manage buyorder
 	if itemhandler.buyorder is not None and itemhandler.buyorder.canChange():
 		curPrice = prices[0]
 		if(curPrice == -1):
-			print("Warning, not adjusting item: " + getNameFromID(itemhandler.itemid) + " because there is no good price.")
+			print("Warning, not adjusting item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
 		else:
-			print("curprice of item called \"" + getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
+			print("curprice of item called \"" + api.getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
 			if(curPrice > float(itemhandler.buyorder.price)):
 				print("Adjusting buyorder!")
 				position, itemsinlist = getOrderPosition(itemhandler.buyorder)
@@ -390,7 +391,7 @@ def checkAndUnderBid(itemhandler):
 		for sellorder, idx in enumerate(itemhandler.sellorderlist):
 			if sellorder.canChange():
 				curPrice = prices[1]
-				print("curprice of item called \"" + getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
+				print("curprice of item called \"" + api.getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
 				if(curPrice < float(sellorder.price)):
 					print("Adjusting sellorder!")
 					position, itemsinlist = getOrderPosition(sellorder)

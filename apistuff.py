@@ -1,22 +1,23 @@
 import grequests
 import json
 import time
-import variables
 import asyncio
-from common import *
+import common as cm
 from aiohttp import ClientSession
 
-def getItemID(name):
-	with ClientSession() as session:
-		with session.get("https://www.fuzzwork.co.uk/api/typeid.php?typename=" + str(name)) as response:
-			rsjson = json.loads(response)
-			return str(rsjson['typeID'])
-
-def getNameFromID(itemid):
-	with ClientSession() as session:
-		with session.get("https://www.fuzzwork.co.uk/api/typeid.php?typeid=" + str(itemid)) as response:
-			rsjson = json.loads(response)
+async def agetNameFromID(typeid):
+	async with ClientSession() as session:
+		async with session.get("https://www.fuzzwork.co.uk/api/typeid.php?typeid=" + str(typeid)) as response:
+			repo = await response.read()
+			rsjson = json.loads(repo)
 			return str(rsjson['typeName'])
+
+def getNameFromID(typeid):
+	loop = asyncio.get_event_loop()
+	future = asyncio.ensure_future(agetNameFromID(typeid))
+	typename = loop.run_until_complete(future)
+	loop.close
+	return typename
 
 class SimpleOrder:
 	def __init__(self, typeid: int, is_buy_order: bool, price: float):
