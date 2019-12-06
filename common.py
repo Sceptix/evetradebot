@@ -7,9 +7,11 @@ import pytesseract
 from difflib import SequenceMatcher
 from pytz import timezone
 from datetime import datetime
+import variables
+import pickle
 
 def getEVETimestamp():
-    return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()
+	return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()
 
 class Point:
 	def __init__(self, xin, yin):
@@ -40,9 +42,9 @@ class Order:
 		self.issuedate = issuedate
 		self.finished = False
 	def __str__(self):
-		return "Order: " + str(self.__dict__)    
+		return str(self.__dict__)
 	def __repr__(self):
-		return self.__str__(self)
+		return str(self.__dict__)
 	def canChange(self):
 		return (getEVETimestamp() - self.issuedate) > 300
 
@@ -59,26 +61,24 @@ class ItemHandler:
 
 	def handle(self):
 		orderstuff.refreshOrders(self)
+		goodprices = orderstuff.getGoodPrices(self.typeid)
 		#check unprofitable, cancel buyorder if it is
-		orderstuff.refreshUnprofitable(self)
+		orderstuff.refreshUnprofitable(self, goodprices)
 		if(self.unprofitable):
 			return
 		#we place buyorder when there are no orders
 		if not self.buyorder and not self.sellorderlist:
-			orderstuff.buyItem(self)
+			orderstuff.buyItem(self, goodprices)
 
 			#todo delete this after testing, i only need this so it doesnt buy every item after restarting
-			with open('itemhandlers.csv', 'rb') as itemhandlersfile:
-				try:
-					itemhandlerlist = pickle.load(itemhandlersfile)
-				except EOFError:
-					pass
+			with open('itemhandlers.csv', 'wb') as itemhandlersfile:
+				pickle.dump(variables.itemhandlerlist, itemhandlersfile)
 
 			return
 		#we only sell half of bought once per item cycle
 		if self.buyorder is not None:
 			if (self.buyorder.volremaining < (self.buyorder.volentered / 2) and not self.sellorderlist) or self.buyorder.finished:
-				orderstuff.sellItem(self)
+				orderstuff.sellItem(self, goodprices)
 				if self.buyorder.finished:
 					self.buyorder = None
 		#check if all sellorders are done
@@ -86,13 +86,10 @@ class ItemHandler:
 		if all(order.finished for order in self.sellorderlist):
 			sellorderlist = []
 		#update prices
-		orderstuff.checkAndUnderBid(self)
+		orderstuff.checkAndUnderBid(self, goodprices)
 		#todo delete this after testing, i only need this so it doesnt buy every item after restarting
-		with open('itemhandlers.csv', 'rb') as itemhandlersfile:
-			try:
-				itemhandlerlist = pickle.load(itemhandlersfile)
-			except EOFError:
-				pass
+		with open('itemhandlers.csv', 'wb') as itemhandlersfile:
+			pickle.dump(variables.itemhandlerlist, itemhandlersfile)
 
 
 def clickPoint(point, clicks=1, right=False):
@@ -103,6 +100,7 @@ def clickPoint(point, clicks=1, right=False):
 	else:
 		pyautogui.click(clicks=clicks)
 
+#todo implement caching some of these point positions, especially details and myorders
 def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False):
 	thing = pyautogui.locateOnScreen(pngname, confidence=0.9)
 	if thing is None:
@@ -125,6 +123,24 @@ def clickDetails():
 def clickMyOrders():
 	clickPointPNG('imgs/multibuy.png', 160, 3)
 
+def getAPandLH(bid):
+	if bid:
+		actingpointthing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
+		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
+		buylisttopleft = Point(thing.left + 74, thing.top + 16)
+		thing = pyautogui.locateOnScreen('imgs/myordersexport.png', confidence=0.9)
+		buylistbottomleft = Point(thing.left + 79, thing.top - 85)
+		listheight = buylistbottomleft.y - buylisttopleft.y	+ 2
+	else:
+		actingpointthing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
+		thing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
+		selllisttopleft = Point(thing.left + 74, thing.top + 16)
+		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
+		selllistbottomleft = Point(thing.left + 74, thing.top - 7)
+		listheight = selllistbottomleft.y - selllisttopleft.y + 2
+	actingPoint = Point(actingpointthing.left + 100, actingpointthing.top + 17)
+	return (actingPoint, listheight)
+
 def search_market(item):
 	pos = pyautogui.locateOnScreen('imgs/search.png')
 	pyautogui.moveTo(pos.left - 70, pos.top + pos.height / 2)
@@ -135,7 +151,7 @@ def search_market(item):
 	pyautogui.click(pos.left + pos.width / 2, pos.top + pos.height / 2)
 
 def similar(a, b):
-    return SequenceMatcher(None, a, b).ratio()
+	return SequenceMatcher(None, a, b).ratio()
 
 def grabandocr(box, pricesonly=False, treshfilter=False):
 	if isinstance(box, Area):
@@ -182,7 +198,6 @@ def openItem(typeid):
 		for idx, s in enumerate(ocrlines):
 			s = s.lower()
 			#if len(s.split()) > 11:
-			print(s)
 			if(len(s.split()) <= 11 or len(s.split()[-1]) < 2):
 				if curstring:
 					stringdict[curstring.strip()] = idx - 1

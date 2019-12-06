@@ -1,4 +1,4 @@
-minmargin 0.2
+minmargin 0.25
 maxmargin 0.85
 capital 2000000
 minquantity 10

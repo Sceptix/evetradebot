@@ -10,4 +10,10 @@ with open('settings.txt', 'r') as settings:
 		elif key == "minquantity":
 			minquantity = float(val)
 
-itemhandlerlist = []
+def init():
+	global itemhandlerlist
+	global bidaplh
+	global sellaplh
+	itemhandlerlist = []
+	bidaplh = (None, None)
+	sellaplh = (None, None)

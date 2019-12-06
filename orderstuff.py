@@ -10,31 +10,15 @@ from collections import defaultdict
 from dateutil.parser import parse as DateUtilParser
 import apistuff as api
 import common as cm
-from variables import *
-
-
-def getAPandLH(bid):
-	if bid:
-		actingpointthing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-		buylisttopleft = cm.Point(thing.left + 74, thing.top + 16)
-		thing = pyautogui.locateOnScreen('imgs/myordersexport.png', confidence=0.9)
-		buylistbottomleft = cm.Point(thing.left + 79, thing.top - 85)
-		listheight = buylistbottomleft.y - buylisttopleft.y	+ 2
-	else:
-		actingpointthing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
-		thing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
-		selllisttopleft = cm.Point(thing.left + 74, thing.top + 16)
-		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-		selllistbottomleft = cm.Point(thing.left + 74, thing.top - 7)
-		listheight = selllistbottomleft.y - selllisttopleft.y + 2
-	actingPoint = cm.Point(actingpointthing.left + 100, actingpointthing.top + 17)
-	return actingPoint, listheight
+import variables
 
 def changeOrder(order, newprice, position, itemsinlist):
 	print("changing order of item: " + api.getNameFromID(order.typeid))
 	cm.clickMyOrders()
-	actingPoint, listheight = getAPandLH(order.bid)
+	if order.bid:
+		actingPoint, listheight = variables.bidaplh
+	else:
+		actingPoint, listheight = variables.sellaplh
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
 	pyautogui.sleep(0.2)
 	
@@ -71,7 +55,10 @@ def cancelOrder(order):
 	print("cancelling buyorder: " + api.getNameFromID(order.typeid))
 	cm.clickMyOrders()
 
-	actingPoint, listheight = getAPandLH(order.bid)
+	if order.bid:
+		actingPoint, listheight = variables.bidaplh
+	else:
+		actingPoint, listheight = variables.sellaplh
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
 	pyautogui.sleep(0.2)
 	
@@ -92,7 +79,7 @@ def cancelOrder(order):
 def areOrdersTheSame(o1, o2):
 	issuedateDelta = abs(o1.issuedate - o2.issuedate)
 	if(o1.orderid == -1 or o2.orderid == -1):
-		return (o1.typeid == o2.typeid) and (o1.bid == o2.bid) and (o1.volentered == o2.volentered) and (issuedateDelta < 5)
+		return (o1.typeid == o2.typeid) and (o1.bid == o2.bid) and (o1.volentered == o2.volentered) and (issuedateDelta < 10)
 	else:
 		return (o1.orderid == o2.orderid)
 #refresh orders finished, volremaing and orderid
@@ -105,7 +92,7 @@ def refreshOrders(itemhandler):
 	cm.clickMyOrders()
 	pyautogui.sleep(0.3)
 	cm.clickPointPNG('imgs/myordersexport.png', 10, 10)
-	pyautogui.sleep(1)
+	pyautogui.sleep(3)
 	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
 	if thing is not None:
 		okbutton = cm.Point(thing.left + 169, thing.top + 194)
@@ -140,7 +127,6 @@ def refreshOrders(itemhandler):
 				itemhandler.buyorder = nfo
 			else:
 				itemhandler.sellorderlist.append(nfo)
-	refreshOrderCache(itemhandlerlist)
 
 def sellitemininventory(typeid, price):
 	item = api.getNameFromID(typeid)
@@ -241,6 +227,7 @@ def buyorder(typeid, price, quantity):
 def getTopOrders(typeid):
 	cm.openItem(typeid)
 	cm.clickPointPNG("imgs/exporttofile.png", 5, 5)
+	pyautogui.sleep(3)
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	buyorders, sellorders = [], []
@@ -289,6 +276,7 @@ def getOrderPosition(wantedorder):
 	#sort by boughtat, which is also the standard sorting in eve's my orders
 	#todo implement check to look if "expires in" is sorted in the correct direction (oldest first)
 	orderlist.sort(key=lambda x: x.issuedate, reverse=False)
+	print(orderlist)
 	for order in orderlist:
 		if(order.bid):
 			buylist.append(order)
@@ -307,48 +295,44 @@ def getOrderPosition(wantedorder):
 	
 #this is to avoid over or underbidding somebody with low quantity
 #if overbid is set to false, we dont add the random ammount
-def getGoodPrices(typeid, overbid=True):
-	refreshOrderCache(itemhandlerlist)
+def getGoodPrices(typeid):
+	refreshOrderCache(variables.itemhandlerlist)
 	toporders = getTopOrders(typeid)
 	buyprice, sellprice = -1, -1
 	highestbidderflag = False
 	for o in toporders[0]:
-		if(o.volremaining > minquantity):
-			if overbid:
-				buyprice = round(o.price + random.random() / 7 + 0.01, 2)
-			else:
-				buyprice = o.price
+		if(o.volremaining > variables.minquantity):
+			buyprice = o.price
 			break
 	#highest bidder checks for sell orders
 	for o in toporders[1]:
-		if(o.volremaining > minquantity):
+		if(o.volremaining > variables.minquantity):
 			highestbidderflag = any(areOrdersTheSame(o, co) for co in getOrderCache())
-			if overbid:
-				sellprice = round(o.price - random.random() / 7 - 0.01, 2)
-			else:
-				sellprice = o.price
+			sellprice = o.price
 			break
 	return (buyprice, sellprice, highestbidderflag)
 
-def buyItem(itemhandler):
+def buyItem(itemhandler, goodprices):
 	quantity = itemhandler.volume
-	buyprice = getGoodPrices(itemhandler.typeid)[0]
+	buyprice = goodprices[0]
 	if(buyprice == -1):
 		print("Warning, not buying item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
 		return
-	print("itemhandler initiating initialbuyorder: " + str(itemhandler.typeid) + " , " + str(buyprice) + " , " + str(quantity))
+	buyprice = round(buyprice + random.random() / 7 + 0.01, 2)
+	print("itemhandler called: " + api.getNameFromID(itemhandler.typeid) + " is initiating buyorder. price:" + str(buyprice) + ", quantity:" + str(quantity))
 	buyorder(itemhandler.typeid, buyprice, quantity)
 	itemhandler.buyorder = cm.Order(itemhandler.typeid, -1, True, buyprice, quantity, quantity, cm.getEVETimestamp())
 	#this line sets the orderid from -1 to something else
 	refreshOrders(itemhandler)
-	refreshOrderCache(itemhandlerlist)
+	refreshOrderCache(variables.itemhandlerlist)
 
-def sellItem(itemhandler):
-	sellPrice = getGoodPrices(itemhandler.typeid)[1]
+def sellItem(itemhandler, goodprices):
+	sellprice = goodprices[1]
 	if(sellprice == -1):
 		print("Warning, not selling item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
 		return
-	sellitemininventory(itemhandler.typeid, sellPrice)
+	sellprice = round(sellprice - random.random() / 7 - 0.01, 2)
+	sellitemininventory(itemhandler.typeid, sellprice)
 	quantity = 0
 	if itemhandler.buyorder.finished:
 		#adjust the quantity if there are previous sellorders
@@ -359,18 +343,18 @@ def sellItem(itemhandler):
 		#we only get here once, because we check if sellorderlist has no
 		#elements in the ifstatement in the selling part in itemhandler's handle()
 		quantity = itemhandler.buyorder.volentered - itemhandler.buyorder.volremaining
-	itemhandler.sellorderlist.append(cm.Order(itemhandler.typeid, -1, False, sellPrice, quantity, quantity, cm.getEVETimestamp()))
+	itemhandler.sellorderlist.append(cm.Order(itemhandler.typeid, -1, False, sellprice, quantity, quantity, cm.getEVETimestamp()))
 	#this line sets the orderid from -1 to something else
 	refreshOrders(itemhandler)
-	refreshOrderCache(itemhandlerlist)
+	refreshOrderCache(variables.itemhandlerlist)
 
-def refreshUnprofitable(itemhandler):
-	prices = getGoodPrices(itemhandler.typeid, overbid=False)
+def refreshUnprofitable(itemhandler, goodprices):
+	prices = goodprices
 	pricemargin = (prices[1] - prices[0]) / prices[1]
-	itemhandler.unprofitable = (pricemargin < minmargin)
+	itemhandler.unprofitable = (pricemargin < variables.minmargin)
 
-def checkAndUnderBid(itemhandler):
-	prices = getGoodPrices(itemhandler.typeid, overbid=False)
+def checkAndUnderBid(itemhandler, goodprices):
+	prices = goodprices
 	#manage buyorder
 	if itemhandler.buyorder is not None and itemhandler.buyorder.canChange():
 		curPrice = prices[0]
@@ -388,7 +372,7 @@ def checkAndUnderBid(itemhandler):
 	#this makes all of your sellorders have the same price
 	if itemhandler.sellorderlist:
 		highestBidder = prices[2]
-		for sellorder, idx in enumerate(itemhandler.sellorderlist):
+		for sellorder in itemhandler.sellorderlist:
 			if sellorder.canChange():
 				curPrice = prices[1]
 				print("curprice of item called \"" + api.getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
