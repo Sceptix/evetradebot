@@ -10,6 +10,7 @@ from datetime import datetime
 import variables
 import pickle
 
+
 def getEVETimestamp():
 	return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()
 
@@ -59,15 +60,34 @@ class ItemHandler:
 		self.buyorder = None
 		self.sellorderlist = []
 
+	def clearOrders(self):
+		self.buyorder = None
+		self.sellorderlist = []
+
 	def handle(self):
-		orderstuff.refreshOrders(self)
+		print("handler: " + api.getNameFromID(self.typeid))
+		allorders = []
+		allorders += self.sellorderlist
+		allorders.append(self.buyorder)
+		print(allorders)
+		orderstuff.refreshAllOrders()
+		print("handler: " + api.getNameFromID(self.typeid))
+		allorders = []
+		allorders += self.sellorderlist
+		allorders.append(self.buyorder)
+		print(allorders)
+
 		goodprices = orderstuff.getGoodPrices(self.typeid)
 		#check unprofitable, cancel buyorder if it is
 		orderstuff.refreshUnprofitable(self, goodprices)
-		if(self.unprofitable):
+		if(self.unprofitable and self.buyorder is not None and not self.sellorderlist):
+			print("cancelling itemhandler: " + api.getNameFromID(self.typeid) + "'s buyorder due to unprofitability")
+			orderstuff.cancelOrder(self.buyorder)
+			print("selling itemhandler: " + api.getNameFromID(self.typeid) + "'s purchases")
+			orderstuff.sellItem(self, goodprices)
 			return
 		#we place buyorder when there are no orders
-		if not self.buyorder and not self.sellorderlist:
+		if not self.buyorder and not self.sellorderlist and not self.unprofitable:
 			orderstuff.buyItem(self, goodprices)
 
 			#todo delete this after testing, i only need this so it doesnt buy every item after restarting
@@ -76,7 +96,7 @@ class ItemHandler:
 
 			return
 		#we only sell half of bought once per item cycle
-		if self.buyorder is not None:
+		if self.buyorder is not None and not self.unprofitable:
 			if (self.buyorder.volremaining < (self.buyorder.volentered / 2) and not self.sellorderlist) or self.buyorder.finished:
 				orderstuff.sellItem(self, goodprices)
 				if self.buyorder.finished:
@@ -85,8 +105,11 @@ class ItemHandler:
 		#finished is false if its not finished
 		if all(order.finished for order in self.sellorderlist):
 			sellorderlist = []
+			print("itemhandler went through full trade cycle")
+		
 		#update prices
 		orderstuff.checkAndUnderBid(self, goodprices)
+
 		#todo delete this after testing, i only need this so it doesnt buy every item after restarting
 		with open('itemhandlers.csv', 'wb') as itemhandlersfile:
 			pickle.dump(variables.itemhandlerlist, itemhandlersfile)
@@ -146,7 +169,7 @@ def search_market(item):
 	pyautogui.moveTo(pos.left - 70, pos.top + pos.height / 2)
 	pyautogui.doubleClick(pos.left - 70, pos.top + pos.height / 2)
 	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(item, interval=0.1)
+	pyautogui.typewrite(item, interval=0.03)
 	pyautogui.moveTo(pos.left + pos.width / 2, pos.top + pos.height / 2)
 	pyautogui.click(pos.left + pos.width / 2, pos.top + pos.height / 2)
 
@@ -156,7 +179,7 @@ def similar(a, b):
 def grabandocr(box, pricesonly=False, treshfilter=False):
 	if isinstance(box, Area):
 		box = box.toAbsTuple()
-
+	#todo make this tesseract thingy for every pc
 	config = """ --tessdata-dir "C:\\Users\\timon\\Desktop\\tesseract\\tessdata" --psm 4 """
 	if pricesonly:
 		config += "-c tessedit_char_whitelist=\\'iskISK0123456789. "
@@ -193,6 +216,9 @@ def openItem(typeid):
 
 		ocr = grabandocr(searchareacapturepos)
 		ocrlines = ocr.splitlines()[1:]
+		if(len(ocrlines) == 0):
+			print("ocr detected nothing, returning")
+			sys.exit()
 		stringdict = {}
 		curstring = ""
 		for idx, s in enumerate(ocrlines):
@@ -204,7 +230,8 @@ def openItem(typeid):
 				curstring = ""
 			else:
 				curstring += s.split()[-1] + " "
-		stringdict[curstring.strip()] = idx - 1
+			if (idx == len(ocrlines) - 1):
+				stringdict[curstring.strip()] = idx - 1
 		highestsim = -1
 		bestidx = 0
 		for s in stringdict:
@@ -212,12 +239,13 @@ def openItem(typeid):
 			if cursim > highestsim:
 				highestsim = cursim
 				bestidx = stringdict[s]
-		s = ocrlines[bestidx]
-		offsetpos = searchareacapturepos
-		mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
-		mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
-		clickxy(mousex, mousey)
-		return
+		if (highestsim > 0.5):
+			s = ocrlines[bestidx]
+			offsetpos = searchareacapturepos
+			mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
+			mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
+			clickxy(mousex, mousey)
+			return
 
 		#we only get here if it didnt find an item: the item must have been in a collapsed category
 		for s in ocr.splitlines()[1:]:

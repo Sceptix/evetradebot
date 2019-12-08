@@ -1,6 +1,9 @@
 #todo make a readme with needed setup config
 #disable agency and daily gifts show up on login
 #make sure regional manager and inventory are big
+#make sure "Cancel Order", "Market Export Information" and "Personal Market Export Information"
+#are in Reset Settings -> Reset Supress Message settings
+#quadruple check that expires in is sorted so the arrow points upwards
 
 import pyautogui
 import pytesseract
@@ -33,7 +36,7 @@ for si in goodmarginsimpleitems:
 
 #close undock window
 cm.clickPointPNG('imgs/undock.png', 173, 3)
-
+pyautogui.sleep(1)
 cm.clickMyOrders()
 variables.bidaplh = cm.getAPandLH(True)
 variables.sellaplh = cm.getAPandLH(False)
@@ -47,15 +50,15 @@ with open('itemhandlers.csv', 'rb') as itemhandlersfile:
 
 print("initiating itemhandlers...")
 volumesum = 0
-for ti in tradableitems:
+for ti in tradableitems[:variables.maxhandlers]:
 	volumesum += ti.volume
-for ti in tradableitems:
-	if(len(variables.itemhandlerlist) == 8):
+for ti in tradableitems[:variables.maxhandlers]:
+	if(len(variables.itemhandlerlist) == variables.maxhandlers):
 		break
 	print("initiating itemhandler: " + api.getNameFromID(ti.typeid))
 	if not(any(ti.typeid == ih.typeid for ih in variables.itemhandlerlist)):
-		variables.capitalpercentage = ti.volume / volumesum
-		investition = variables.capital * variables.capitalpercentage
+		capitalpercentage = ti.volume / volumesum
+		investition = variables.capital * capitalpercentage
 		buyprice = getGoodPrices(ti.typeid)[0]
 		if(buyprice == -1):
 			print("Warning, not adding itemhandler: " + api.getNameFromID(ti.typeid) + " because there is no good price.")
@@ -68,9 +71,11 @@ with open('itemhandlers.csv', 'wb') as itemhandlersfile:
 	pickle.dump(variables.itemhandlerlist, itemhandlersfile)
 
 
-if(len(variables.itemhandlerlist) > 8):
-	print("more than 8 item handlers wont work with an alpha account")
+if(len(variables.itemhandlerlist) > variables.maxhandlers):
+	print("exceeded maxhandlers")
 	sys.exit()
+
+loadOrders()
 
 def connectionLost():
 	cl = pyautogui.locateOnScreen("imgs/connectionlost.png", confidence=0.9)
@@ -91,20 +96,18 @@ def connectionLost():
 
 #underbid order loop logic
 #todo implement an ocr check when changing orders!!! (check if it clicked the right order)
+#todo fetch new itemhandlers when there are unprofitable ones (that havent changed for an hour or so)
 
 #run for about 9 hours
 tradedaystart = cm.getEVETimestamp()
 while cm.getEVETimestamp() - tradedaystart < 3600 * 7.5:
 	for itemhandler in variables.itemhandlerlist:
 		connectionLost()
-		refreshOrderCache(variables.itemhandlerlist)
+		refreshOrderCache()
 		print("handling itemhandler: " + api.getNameFromID(itemhandler.typeid))
-		time.sleep(random.random() * 3)
 		itemhandler.handle()
-		if(itemhandler.unprofitable):
-			#cancel unprofitable buyorder
-			print("cancelling itemhandler: " + api.getNameFromID(itemhandler.typeid) + "'s buyorder")
-			cancelOrder(itemhandler.buyorder)
+		refreshOrderCache()
+
 while cm.getEVETimestamp() - tradedaystart < 3600 * 9:
 	print("cancelling all buyorders")
 	for idx, ih in enumerate(variables.itemhandlerlist):

@@ -8,7 +8,9 @@ with open('settings.txt', 'r') as settings:
 		elif key == "capital":
 			capital = float(val)
 		elif key == "minquantity":
-			minquantity = float(val)
+			minquantity = int(val)
+		elif key == "maxhandlers":
+			maxhandlers = int(val)
 
 def init():
 	global itemhandlerlist

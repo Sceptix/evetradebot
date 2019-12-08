@@ -11,6 +11,7 @@ from dateutil.parser import parse as DateUtilParser
 import apistuff as api
 import common as cm
 import variables
+import copy
 
 def changeOrder(order, newprice, position, itemsinlist):
 	print("changing order of item: " + api.getNameFromID(order.typeid))
@@ -38,8 +39,12 @@ def changeOrder(order, newprice, position, itemsinlist):
 	#todo, implement ocr check to see if we clicked the right item
 	
 	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(str(newprice), interval=0.1)
+	pyautogui.typewrite(str(newprice), interval=0.03)
 	pyautogui.typewrite(['enter'])
+	pyautogui.sleep(0.5)
+	thing = pyautogui.locateOnScreen("imgs/warning.png", confidence=0.9)
+	if thing is not None:
+		cm.clickPointPNG("imgs/yesno.png", 20, 10)
 	#reset scroll
 	pyautogui.moveTo(actingPoint.x + 10, actingPoint.y + 10)
 	pyautogui.scroll(100000)
@@ -48,8 +53,8 @@ def changeOrder(order, newprice, position, itemsinlist):
 
 #todo implement check that we actually clicked the right order, ocr
 def cancelOrder(order):
-	if(order is None):
-		print("tried to cancel a none order")
+	if(order is None or order.finished):
+		print("Invalid cancel, ignoring")
 		return
 	position, itemsinlist = getOrderPosition(order)
 	print("cancelling buyorder: " + api.getNameFromID(order.typeid))
@@ -74,23 +79,31 @@ def cancelOrder(order):
 	pyautogui.move(40, 115)
 	pyautogui.click()
 	order = None
+	refreshOrderCache()
 
 #used for checking if orders are the same when orderid isnt set
 def areOrdersTheSame(o1, o2):
 	issuedateDelta = abs(o1.issuedate - o2.issuedate)
-	if(o1.orderid == -1 or o2.orderid == -1):
-		return (o1.typeid == o2.typeid) and (o1.bid == o2.bid) and (o1.volentered == o2.volentered) and (issuedateDelta < 10)
-	else:
-		return (o1.orderid == o2.orderid)
+	aresame = ((o1.typeid == o2.typeid) and (issuedateDelta < 10) and (o1.bid == o2.bid)) or (o1.orderid == o2.orderid)
+	return aresame
+
+def refreshItemHandlers(itemhandlerlist):
+	return
+
 #refresh orders finished, volremaing and orderid
-def refreshOrders(itemhandler):
+def refreshAllOrders():
+	itemhandlerlist = variables.itemhandlerlist
 	oldorders = []
-	if itemhandler.buyorder is not None:
-		oldorders.append(itemhandler.buyorder)
-	if itemhandler.sellorderlist:
-		oldorders += itemhandler.sellorderlist
+	for itemhandler in itemhandlerlist:
+		ihcopy = copy.deepcopy(itemhandler)
+		if ihcopy.buyorder is not None:
+			oldorders.append(ihcopy.buyorder)
+		if ihcopy.sellorderlist:
+			oldorders += ihcopy.sellorderlist
+	print("oldorders after grabbing from ih:")
+	print(oldorders)
 	cm.clickMyOrders()
-	pyautogui.sleep(0.3)
+	pyautogui.sleep(2)
 	cm.clickPointPNG('imgs/myordersexport.png', 10, 10)
 	pyautogui.sleep(3)
 	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
@@ -107,32 +120,74 @@ def refreshOrders(itemhandler):
 			neworders.append(cm.Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
 							int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp()))
 	os.remove(logfile)
+	print("neworders after grabbing from export:")
+	print(neworders)
 	newfromoldorders = []
 	#the newfromoldorders list will contain every order even finished ones, the itemhandler will remove those in its handle func
 	for oo in oldorders:
+		curorder = copy.deepcopy(oo)
 		for no in neworders:
 			if areOrdersTheSame(oo, no):
-				oo.volremaining = no.volremaining
-				if(oo.orderid == -1):
-					oo.orderid = no.orderid
+				curorder.volremaining = no.volremaining
+				if(curorder.orderid == -1):
+					curorder.orderid = no.orderid
 				break
-		if not any(areOrdersTheSame(oo, no) for no in neworders):
-			oo.finished = True
-		newfromoldorders.append(oo)
-	#sort each neworder back into the itemhandler
-	itemhandler.sellorderlist = []
-	for nfo in newfromoldorders:
-		if(itemhandler.typeid == nfo.typeid):
-			if nfo.bid:
-				itemhandler.buyorder = nfo
-			else:
-				itemhandler.sellorderlist.append(nfo)
+		curorder.finished = not any(areOrdersTheSame(oo, no) for no in neworders)
+		newfromoldorders.append(curorder)
+	#sort each neworder back into the itemhandlers
+	for itemhandler in itemhandlerlist:
+		itemhandler.sellorderlist = []
+		itemhandler.buyorder = None
+		for nfo in newfromoldorders:
+			if(itemhandler.typeid == nfo.typeid):
+				if nfo.bid:
+					itemhandler.buyorder = nfo
+				else:
+					itemhandler.sellorderlist.append(nfo)
+	print("nfo:")
+	print(newfromoldorders)
+	print("rfo done.")
+	refreshOrderCache()
+
+#loads all orders from export, overwriting old ones
+def loadOrders():
+	itemhandlerlist = variables.itemhandlerlist
+	cm.clickMyOrders()
+	pyautogui.sleep(2)
+	cm.clickPointPNG('imgs/myordersexport.png', 10, 10)
+	pyautogui.sleep(3)
+	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
+	if thing is not None:
+		okbutton = cm.Point(thing.left + 169, thing.top + 194)
+		cm.clickPoint(okbutton)
+		return
+	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
+	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
+	neworders = []
+	with open(logfile) as export:
+		reader = csv.DictReader(export)
+		for l in reader:
+			neworders.append(cm.Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
+							int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp()))
+	os.remove(logfile)
+	#sort each neworder back into the itemhandlers
+	for itemhandler in itemhandlerlist:
+		itemhandler.sellorderlist = []
+		itemhandler.buyorder = None
+		for no in neworders:
+			if(itemhandler.typeid == no.typeid):
+				if no.bid:
+					itemhandler.buyorder = no
+				else:
+					itemhandler.sellorderlist.append(no)
+	refreshOrderCache()
+
 
 def sellitemininventory(typeid, price):
 	item = api.getNameFromID(typeid)
 	cm.clickPointPNG('imgs/inventorytopright.png', 0, 25, 2)
 	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(item, interval=0.1)
+	pyautogui.typewrite(item, interval=0.03)
 
 	thing = pyautogui.locateOnScreen('imgs/inventoryitemhangar.png')
 	inventorylist = cm.Area(thing.left + 25, thing.top + 70, 1000, 250)
@@ -175,7 +230,7 @@ def sellitemininventory(typeid, price):
 					pyautogui.sleep(0.1)
 					pyautogui.doubleClick(pricefield.x, pricefield.y)
 					pyautogui.typewrite(['backspace'])
-					pyautogui.typewrite(str(price), interval=0.1)
+					pyautogui.typewrite(str(price), interval=0.03)
 
 					cm.clickPoint(sellbutton)
 					pyautogui.sleep(0.5)
@@ -183,7 +238,8 @@ def sellitemininventory(typeid, price):
 					confirmbutton = cm.Point( thing.left +145 , thing.top + 193)
 					cm.clickPoint(confirmbutton)
 
-					return
+					return 1
+	return 0
 
 def buyorder(typeid, price, quantity):
 	cm.clickDetails()
@@ -210,11 +266,11 @@ def buyorder(typeid, price, quantity):
 	cm.clickPoint(bidpricefield, 2)
 	pyautogui.sleep(0.1)
 	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(str(price), interval=0.1)
+	pyautogui.typewrite(str(price), interval=0.03)
 	cm.clickPoint(quantityfield, 2)
 	pyautogui.sleep(0.1)
 	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(str(quantity), interval=0.1)
+	pyautogui.typewrite(str(quantity), interval=0.03)
 	cm.clickPoint(duration)
 	cm.clickPoint(threemonths)
 	cm.clickPoint(buybutton, 1)
@@ -226,6 +282,7 @@ def buyorder(typeid, price, quantity):
 #returns the top six buy and sell orders
 def getTopOrders(typeid):
 	cm.openItem(typeid)
+	pyautogui.sleep(2)
 	cm.clickPointPNG("imgs/exporttofile.png", 5, 5)
 	pyautogui.sleep(3)
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
@@ -250,7 +307,8 @@ def getTopOrders(typeid):
 
 #call this every time you handle an itemhandler
 #this is also just used for the positions, thats why we dont add finished orders to the list
-def refreshOrderCache(itemhandlerlist):
+def refreshOrderCache():
+	itemhandlerlist = variables.itemhandlerlist
 	allorders = []
 	for ih in itemhandlerlist:
 		if ih.buyorder is not None and not ih.buyorder.finished:
@@ -264,7 +322,10 @@ def refreshOrderCache(itemhandlerlist):
 def getOrderCache():
 	allorders = []
 	with open('ordercache.csv', 'rb') as oc:
-		allorders = pickle.load(oc)
+		try:
+			allorders = pickle.load(oc)
+		except EOFError:
+			pass
 	return allorders
 
 #returns the index and length of the list this order is in
@@ -274,7 +335,7 @@ def getOrderPosition(wantedorder):
 	buylist = []
 	selllist = []
 	#sort by boughtat, which is also the standard sorting in eve's my orders
-	#todo implement check to look if "expires in" is sorted in the correct direction (oldest first)
+	#todo implement check to look if "expires in" is sorted in the correct direction (lowest timestamp first)
 	orderlist.sort(key=lambda x: x.issuedate, reverse=False)
 	print(orderlist)
 	for order in orderlist:
@@ -296,7 +357,6 @@ def getOrderPosition(wantedorder):
 #this is to avoid over or underbidding somebody with low quantity
 #if overbid is set to false, we dont add the random ammount
 def getGoodPrices(typeid):
-	refreshOrderCache(variables.itemhandlerlist)
 	toporders = getTopOrders(typeid)
 	buyprice, sellprice = -1, -1
 	highestbidderflag = False
@@ -323,8 +383,8 @@ def buyItem(itemhandler, goodprices):
 	buyorder(itemhandler.typeid, buyprice, quantity)
 	itemhandler.buyorder = cm.Order(itemhandler.typeid, -1, True, buyprice, quantity, quantity, cm.getEVETimestamp())
 	#this line sets the orderid from -1 to something else
-	refreshOrders(itemhandler)
-	refreshOrderCache(variables.itemhandlerlist)
+	refreshAllOrders()
+	refreshOrderCache()
 
 def sellItem(itemhandler, goodprices):
 	sellprice = goodprices[1]
@@ -332,7 +392,9 @@ def sellItem(itemhandler, goodprices):
 		print("Warning, not selling item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
 		return
 	sellprice = round(sellprice - random.random() / 7 - 0.01, 2)
-	sellitemininventory(itemhandler.typeid, sellprice)
+	flag = sellitemininventory(itemhandler.typeid, sellprice)
+	if(flag == 0):
+		print("couldnt sell item from inventory, doesnt exist")
 	quantity = 0
 	if itemhandler.buyorder.finished:
 		#adjust the quantity if there are previous sellorders
@@ -345,8 +407,8 @@ def sellItem(itemhandler, goodprices):
 		quantity = itemhandler.buyorder.volentered - itemhandler.buyorder.volremaining
 	itemhandler.sellorderlist.append(cm.Order(itemhandler.typeid, -1, False, sellprice, quantity, quantity, cm.getEVETimestamp()))
 	#this line sets the orderid from -1 to something else
-	refreshOrders(itemhandler)
-	refreshOrderCache(variables.itemhandlerlist)
+	refreshAllOrders()
+	refreshOrderCache()
 
 def refreshUnprofitable(itemhandler, goodprices):
 	prices = goodprices
