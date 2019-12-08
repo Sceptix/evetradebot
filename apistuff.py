@@ -4,6 +4,8 @@ import time
 import asyncio
 import common as cm
 from aiohttp import ClientSession
+import variables
+import orderstuff
 
 async def agetNameFromID(typeid):
 	async with ClientSession() as session:
@@ -114,3 +116,49 @@ def setItemVolumes(simpleitemslist):
 	future = asyncio.ensure_future(getResponses(simpleitemslist))
 	simpleitemslist = loop.run_until_complete(future)
 	loop.close
+
+def fetchItemHandlers():
+	itemhandlerlist = variables.itemhandlerlist
+
+	if not itemhandlerlist:
+		for _ in range(8):
+			itemhandlerlist.append(cm.ItemHandler(-1,-1,-1))
+
+	print("fetching tradable items...")
+	simpleitems = collectItems()
+	goodmarginsimpleitems = []
+	for si in simpleitems:
+		if(variables.maxmargin > si.margin() > variables.minmargin):
+			if(si.lowestsell - si.highestbuy > 1000):
+				goodmarginsimpleitems.append(si)
+	setItemVolumes(goodmarginsimpleitems)
+	tradableitems = []
+	for si in goodmarginsimpleitems:
+		if(si.volume > 30000):
+			print("id: " + str(si.typeid) + ", margin: " + str(si.margin()) + ", volume: " + str(si.volume))
+			tradableitems.append(si)
+
+
+	print("initiating itemhandlers...")
+	volumesum = 0
+	idx = 0
+	for ti in tradableitems[:variables.maxhandlers]:
+		volumesum += ti.volume
+	for ti in tradableitems:
+		if(len(itemhandlerlist) == variables.maxhandlers and not(any(ih.typeid == -1 for ih in itemhandlerlist))):
+			break
+		print("initiating itemhandler: " + getNameFromID(ti.typeid))
+		if itemhandlerlist[idx].unprofitable or itemhandlerlist[idx].typeid == -1:
+			capitalpercentage = ti.volume / volumesum
+			investition = variables.capital * capitalpercentage
+			buyprice = orderstuff.getGoodPrices(ti.typeid)[0]
+			if(buyprice == -1):
+				print("Warning, not adding itemhandler: " + getNameFromID(ti.typeid) + " because there is no good price.")
+				continue
+			volume = math.ceil(investition / buyprice)
+			itemhandlerlist[idx] = cm.ItemHandler(ti.typeid, investition, volume)
+			idx += 1
+
+	if(len(itemhandlerlist) > variables.maxhandlers):
+		print("exceeded maxhandlers")
+		sys.exit()

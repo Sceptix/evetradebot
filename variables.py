@@ -11,6 +11,8 @@ with open('settings.txt', 'r') as settings:
 			minquantity = int(val)
 		elif key == "maxhandlers":
 			maxhandlers = int(val)
+		elif key == "tesseractpath":
+			tesseractpath = val
 
 def init():
 	global itemhandlerlist

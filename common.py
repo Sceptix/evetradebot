@@ -49,7 +49,6 @@ class Order:
 	def canChange(self):
 		return (getEVETimestamp() - self.issuedate) > 300
 
-#todo implement rebuying items, that have been bought and sold faster, more often than other items
 #general rule: every item can only ever have 2 orders belonging to it
 class ItemHandler:
 	def __init__(self, typeid: int, investition: float, volume: int):
@@ -89,11 +88,6 @@ class ItemHandler:
 		#we place buyorder when there are no orders
 		if not self.buyorder and not self.sellorderlist and not self.unprofitable:
 			orderstuff.buyItem(self, goodprices)
-
-			#todo delete this after testing, i only need this so it doesnt buy every item after restarting
-			with open('itemhandlers.csv', 'wb') as itemhandlersfile:
-				pickle.dump(variables.itemhandlerlist, itemhandlersfile)
-
 			return
 		#we only sell half of bought once per item cycle
 		if self.buyorder is not None and not self.unprofitable:
@@ -106,14 +100,16 @@ class ItemHandler:
 		if all(order.finished for order in self.sellorderlist):
 			sellorderlist = []
 			print("itemhandler went through full trade cycle")
+			if self.unprofitable:
+				print("fetching new itemhandlers from api...")
+				api.fetchItemHandlers()
+				return
+			else:
+				print("increasing volume by 5%...")
+				self.volume *= 1.05
 		
 		#update prices
 		orderstuff.checkAndUnderBid(self, goodprices)
-
-		#todo delete this after testing, i only need this so it doesnt buy every item after restarting
-		with open('itemhandlers.csv', 'wb') as itemhandlersfile:
-			pickle.dump(variables.itemhandlerlist, itemhandlersfile)
-
 
 def clickPoint(point, clicks=1, right=False):
 	pyautogui.moveTo(point.x, point.y)
@@ -123,14 +119,22 @@ def clickPoint(point, clicks=1, right=False):
 	else:
 		pyautogui.click(clicks=clicks)
 
+pointcache = {}
+
 #todo implement caching some of these point positions, especially details and myorders
-def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False):
+def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False, cache=False):
 	thing = pyautogui.locateOnScreen(pngname, confidence=0.9)
 	if thing is None:
 		print("couldnt click png: " + pngname)
 		return
-	point = Point(thing.left + leftoffset, thing.top + topoffset)
+	if cache:
+		if pngname in pointcache:
+			point = point[pngname]
+		else:
+			point = Point(thing.left + leftoffset, thing.top + topoffset)
+			pointcache[pngname] = point
 	clickPoint(point, clicks, right)
+	
 
 def clickxy(x, y, clicks=1, right=False):
 	pyautogui.moveTo(x, y)
@@ -141,10 +145,10 @@ def clickxy(x, y, clicks=1, right=False):
 		pyautogui.click(clicks=clicks)
 
 def clickDetails():
-	clickPointPNG('imgs/multibuy.png', 60, 3)
+	clickPointPNG('imgs/multibuy.png', 60, 3, cache=True)
 
 def clickMyOrders():
-	clickPointPNG('imgs/multibuy.png', 160, 3)
+	clickPointPNG('imgs/multibuy.png', 160, 3, cache=True)
 
 def getAPandLH(bid):
 	if bid:
@@ -176,28 +180,21 @@ def search_market(item):
 def similar(a, b):
 	return SequenceMatcher(None, a, b).ratio()
 
-def grabandocr(box, pricesonly=False, treshfilter=False):
+def grabandocr(box):
 	if isinstance(box, Area):
 		box = box.toAbsTuple()
-	#todo make this tesseract thingy for every pc
-	config = """ --tessdata-dir "C:\\Users\\timon\\Desktop\\tesseract\\tessdata" --psm 4 """
-	if pricesonly:
-		config += "-c tessedit_char_whitelist=\\'iskISK0123456789. "
+	config = " --tessdata-dir "
+	config += '"' + variables.tesseractpath + "tessdata" + '"' + " --psm 4"
 
 	processedimg = ImageGrab.grab(box).convert('L')
-	if treshfilter:
-		thresh = 125
-		fn = lambda x : 255 if x > thresh else 0
-		processedimg = processedimg.convert('L').point(fn, mode='1')
 	processedimg = processedimg.resize((processedimg.width * 4, processedimg.height * 4))
 	processedimg = ImageOps.invert(processedimg)
 	processedimg = processedimg.filter(ImageFilter.GaussianBlur(1.8))
 	processedimg = processedimg.filter(ImageFilter.UnsharpMask(5.7, 340, 10))
 	processedimg = processedimg.filter(ImageFilter.GaussianBlur(0.9))
-	processedimg.save('imgs/screencapture.png')
 
-	pytesseract.pytesseract.tesseract_cmd = 'C:\\Users\\timon\\Desktop\\tesseract\\tesseract.exe'
-	ocr = pytesseract.image_to_data(Image.open('imgs/screencapture.png'), config=config)
+	pytesseract.pytesseract.tesseract_cmd = variables.tesseractpath + "tesseract.exe"
+	ocr = pytesseract.image_to_data(processedimg, config=config)
 	ocr = ocr.lower().split("\n",1)[1]
 	return ocr
 
