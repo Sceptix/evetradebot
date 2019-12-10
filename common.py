@@ -121,7 +121,6 @@ def clickPoint(point, clicks=1, right=False):
 
 pointcache = {}
 
-#todo implement caching some of these point positions, especially details and myorders
 def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False, cache=False):
 	thing = pyautogui.locateOnScreen(pngname, confidence=0.9)
 	if thing is None:

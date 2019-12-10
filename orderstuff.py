@@ -221,6 +221,7 @@ def sellitemininventory(typeid, price):
 					mousey = mousey + 3 + int(s.split()[7]) / 4 + 5
 					cm.clickxy(mousex, mousey)
 					pyautogui.sleep(5)
+					#todo replace this with clickpointpng
 					thing = pyautogui.locateOnScreen('imgs/sellitems.png')
 					pricefield = cm.Point( thing.left + thing.width / 2 , thing.top + 80)
 					thing = pyautogui.locateOnScreen('imgs/sellitemsellcancel.png')

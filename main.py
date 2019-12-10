@@ -4,6 +4,7 @@
 #make sure "Cancel Order", "Market Export Information" and "Personal Market Export Information"
 #are in Reset Settings -> Reset Supress Message settings
 #quadruple check that expires in is sorted so the arrow points upwards
+#make sure that the market window is spaced so "the forge" and "regional market" are on two different lines
 
 import pyautogui
 import pytesseract
