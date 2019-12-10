@@ -102,6 +102,19 @@ def areOrdersTheSame(o1, o2):
 	aresame = ((o1.typeid == o2.typeid) and (issuedateDelta < 10) and (o1.bid == o2.bid)) or (o1.orderid == o2.orderid)
 	return aresame
 
+#todo
+#watch this log for 23031 bid false
+#in nfo, the order doesnt have all information
+#log:
+"""
+[{'typeid': 23031, 'orderid': 5561889484, 'bid': True, 'price': 644.99, 'volentered': 1268, 'volremaining': 131, 'issuedate': 1576008879.0, 'finished': True, 'hasbeenoverbid': False}, {'typeid': 23031, 'orderid': 5561892343, 'bid': False, 'price': 1942.99, 'volentered': 1137, 'volremaining': 2915, 'issuedate': 1576009195.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 23031, 'orderid': -1, 'bid': False, 'price': 1942.89, 'volentered': 131, 'volremaining': 131, 'issuedate': 1576009347.562958, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 41314, 'orderid': 5561889758, 'bid': True, 'price': 2209.11, 'volentered': 349, 'volremaining': 349, 'issuedate': 1576008918.0, 'finished': False, 
+'hasbeenoverbid': False}, {'typeid': 47926, 'orderid': 5561890023, 'bid': True, 'price': 2028.17, 'volentered': 353, 'volremaining': 353, 'issuedate': 1576008956.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 27401, 'orderid': 5561890370, 'bid': True, 'price': 1025.73, 'volentered': 649, 'volremaining': 649, 'issuedate': 1576008997.0, 'finished': True, 'hasbeenoverbid': False}, {'typeid': 47927, 'orderid': 5561890783, 'bid': True, 'price': 2113.38, 'volentered': 286, 'volremaining': 286, 'issuedate': 1576009036.0, 'finished': False, 'hasbeenoverbid': True}, {'typeid': 23039, 'orderid': 5561891069, 'bid': True, 'price': 561.34, 'volentered': 1049, 'volremaining': 1049, 'issuedate': 1576009076.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 11543, 'orderid': 5561891390, 'bid': True, 'price': 3770.04, 'volentered': 154, 'volremaining': 154, 'issuedate': 1576009116.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 11544, 'orderid': 5561891780, 'bid': True, 'price': 8999.57, 'volentered': 29, 'volremaining': 29, 'issuedate': 1576009156.0, 'finished': False, 'hasbeenoverbid': False}]
+neworders after grabbing from export:
+[{'typeid': 41314, 'orderid': 5561889758, 'bid': True, 'price': 2209.11, 'volentered': 349, 'volremaining': 349, 'issuedate': 1576008918.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 47926, 'orderid': 5561890023, 'bid': True, 'price': 2028.17, 'volentered': 353, 'volremaining': 353, 'issuedate': 1576008956.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 47927, 'orderid': 5561890783, 'bid': True, 'price': 2113.38, 'volentered': 286, 'volremaining': 286, 'issuedate': 1576009036.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 23039, 'orderid': 5561891069, 'bid': True, 'price': 561.34, 'volentered': 1049, 'volremaining': 1049, 'issuedate': 1576009076.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 11543, 'orderid': 5561891390, 'bid': True, 'price': 3770.04, 'volentered': 154, 'volremaining': 154, 'issuedate': 1576009116.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 11544, 'orderid': 5561891780, 'bid': True, 'price': 8999.57, 'volentered': 29, 'volremaining': 29, 'issuedate': 1576009156.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 23031, 'orderid': 5561892343, 'bid': False, 'price': 1942.99, 'volentered': 2915, 'volremaining': 2915, 'issuedate': 1576009195.0, 'finished': False, 'hasbeenoverbid': False}]
+nfo:
+[{'typeid': 23031, 'orderid': 5561889484, 'bid': True, 'price': 644.99, 'volentered': 1268, 'volremaining': 131, 'issuedate': 1576008879.0, 'finished': True, 'hasbeenoverbid': False}, {'typeid': 23031, 'orderid': 5561892343, 'bid': False'hasbeenoverbid': False}, {'typeid': 47926, 'orderid': 5561890023, 'bid': True, 'price': 2028.17, 'volentered': 353, 'volremaining': 353, 'issuedate': 1576008956.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 27401, 'orderid': 5561890370, 'bid': True, 'price': 1025.73, 'volentered': 649, 'volremaining': 649, 'issuedate': 1576008997.0, 'finished': True, 'hasbeenoverbid': False}, {'typeid': 47927, 'orderid': 5561890783, 'bid': True, 'price': 2113.38, 'volentered': 286, 'volremaining': 286, 'issuedate': 1576009036.0, 'finished': False, 'hasbeenoverbid': True}, {'typeid': 23039, 'orderid': 5561891069, 'bid': True, 'price': 561.34, 'volentered': 1049, 'volremaining': 1049, 'issuedate': 1576009076.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 11543, 'orderid': 5561891390, 'bid': True, 'price': 3770.04, 'volentered': 154, 'volremaining': 154, 'issuedate': 1576009116.0, 'finished': False, 'hasbeenoverbid': False}, {'typeid': 11544, 'orderid': 5561891780, 'bid': True, 'price': 8999.57, 'volentered': 29, 'volremaining': 29, 'issuedate': 1576009156.0, 'finished': False, 'hasbeenoverbid': False}]
+"""
+
 #refresh orders finished, volremaing and orderid
 def refreshAllOrders():
 	itemhandlerlist = variables.itemhandlerlist
@@ -413,6 +426,7 @@ def sellItem(itemhandler, goodprices):
 	quantity = 0
 	if itemhandler.buyorder.finished:
 		#adjust the quantity if there are previous sellorders
+		#TODO!!! fix this when you have made a sellorder where you also had some of the items in the inventory already
 		quantity = itemhandler.volume
 		for sellorder in itemhandler.sellorderlist:
 			quantity -= sellorder.volentered
