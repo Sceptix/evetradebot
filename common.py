@@ -42,6 +42,7 @@ class Order:
 		self.volremaining = volremaining
 		self.issuedate = issuedate
 		self.finished = False
+		self.hasbeenoverbid = False
 	def __str__(self):
 		return str(self.__dict__)
 	def __repr__(self):
@@ -63,7 +64,7 @@ class ItemHandler:
 		self.buyorder = None
 		self.sellorderlist = []
 
-	def handle(self):
+	def handle(self, nomorebuy=False):
 		print("handler: " + api.getNameFromID(self.typeid))
 		allorders = []
 		allorders += self.sellorderlist
@@ -85,19 +86,20 @@ class ItemHandler:
 			print("selling itemhandler: " + api.getNameFromID(self.typeid) + "'s purchases")
 			orderstuff.sellItem(self, goodprices)
 			return
-		#we place buyorder when there are no orders
-		if not self.buyorder and not self.sellorderlist and not self.unprofitable:
-			orderstuff.buyItem(self, goodprices)
-			return
 		#we only sell half of bought once per item cycle
 		if self.buyorder is not None and not self.unprofitable:
 			if (self.buyorder.volremaining < (self.buyorder.volentered / 2) and not self.sellorderlist) or self.buyorder.finished:
 				orderstuff.sellItem(self, goodprices)
 				if self.buyorder.finished:
 					self.buyorder = None
+		#we place buyorder when there are no orders
+		if not nomorebuy:
+			if not self.buyorder and not self.sellorderlist and not self.unprofitable:
+				orderstuff.buyItem(self, goodprices)
+				return
 		#check if all sellorders are done
 		#finished is false if its not finished
-		if all(order.finished for order in self.sellorderlist):
+		if len(self.sellorderlist) > 0 and all(order.finished == True for order in self.sellorderlist):
 			sellorderlist = []
 			print("itemhandler went through full trade cycle")
 			if self.unprofitable:
@@ -121,19 +123,23 @@ def clickPoint(point, clicks=1, right=False):
 
 pointcache = {}
 
+#todo this just looks awful
 def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False, cache=False):
-	thing = pyautogui.locateOnScreen(pngname, confidence=0.9)
-	if thing is None:
-		print("couldnt click png: " + pngname)
-		return
 	if cache:
+		point = None
 		if pngname in pointcache:
-			point = point[pngname]
+			point = pointcache[pngname]
 		else:
-			point = Point(thing.left + leftoffset, thing.top + topoffset)
-			pointcache[pngname] = point
-	clickPoint(point, clicks, right)
-	
+			thing = pyautogui.locateOnScreen(pngname, confidence=0.9)
+			if thing is not None:
+				point = Point(thing.left + leftoffset, thing.top + topoffset)
+				pointcache[pngname] = point
+		if point is not None:
+			clickPoint(point, clicks, right)
+	else:
+		thing = pyautogui.locateOnScreen(pngname, confidence=0.9)
+		if thing is not None:
+			clickPoint(Point(thing.left + leftoffset, thing.top + topoffset), clicks, right)
 
 def clickxy(x, y, clicks=1, right=False):
 	pyautogui.moveTo(x, y)
@@ -143,29 +149,27 @@ def clickxy(x, y, clicks=1, right=False):
 	else:
 		pyautogui.click(clicks=clicks)
 
-def clickDetails():
-	clickPointPNG('imgs/multibuy.png', 60, 3, cache=True)
-
-def clickMyOrders():
-	clickPointPNG('imgs/multibuy.png', 160, 3, cache=True)
-
 def getAPandLH(bid):
 	if bid:
-		actingpointthing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-		buylisttopleft = Point(thing.left + 74, thing.top + 16)
-		thing = pyautogui.locateOnScreen('imgs/myordersexport.png', confidence=0.9)
-		buylistbottomleft = Point(thing.left + 79, thing.top - 85)
-		listheight = buylistbottomleft.y - buylisttopleft.y	+ 2
+		thing = actingpointthing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
+		buylisttopleft = Point(thing.left - 6969, thing.top + 39)
+		thing = pyautogui.locateOnScreen('imgs/myordersbuyingbottomleft.png', confidence=0.9)
+		buylistbottomleft = Point(thing.left - 6969, thing.top - 8)
+		listheight = buylistbottomleft.y - buylisttopleft.y	+ 3
 	else:
-		actingpointthing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
-		thing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
-		selllisttopleft = Point(thing.left + 74, thing.top + 16)
+		thing = actingpointthing = pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9)
+		selllisttopleft = Point(thing.left - 6969, thing.top + 39)
 		thing = pyautogui.locateOnScreen('imgs/myordersbuying.png', confidence=0.9)
-		selllistbottomleft = Point(thing.left + 74, thing.top - 7)
-		listheight = selllistbottomleft.y - selllisttopleft.y + 2
-	actingPoint = Point(actingpointthing.left + 100, actingpointthing.top + 17)
+		selllistbottomleft = Point(thing.left - 6969, thing.top - 10)
+		listheight = selllistbottomleft.y - selllisttopleft.y + 3
+	actingPoint = Point(actingpointthing.left + 26, actingpointthing.top + 40)
 	return (actingPoint, listheight)
+
+def exportMyOrders():
+	clickPointPNG('imgs/marketorders.png', 6, 6)
+	pyautogui.sleep(0.2)
+	pyautogui.move(10, 22)
+	pyautogui.click()
 
 def search_market(item):
 	pos = pyautogui.locateOnScreen('imgs/search.png')
@@ -199,12 +203,11 @@ def grabandocr(box):
 
 def openItem(typeid):
 	itemname = api.getNameFromID(typeid)
-	clickDetails()
-	thing = pyautogui.locateOnScreen('imgs/browselistleft.png', 0.6)
+	thing = pyautogui.locateOnScreen('imgs/regionalmarkettopleft.png', 0.6)
 	thing2 = pyautogui.locateOnScreen('imgs/search.png')
 	search_market(itemname)
 	pyautogui.sleep(0.3)
-	searchareacapturepos = Area(thing.left, thing.top + 118, thing2.left - thing.left + 58, 400)
+	searchareacapturepos = Area(thing.left, thing.top + 100, thing2.left - thing.left + 50, 400)
 
 	pyautogui.sleep(1)
 

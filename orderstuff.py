@@ -16,7 +16,6 @@ import copy
 def changeOrder(order, newprice, position, itemsinlist):
 	itemname = api.getNameFromID(order.typeid)
 	print("changing order of item: " + itemname)
-	cm.clickMyOrders()
 	if order.bid:
 		actingPoint, listheight = variables.bidaplh
 	else:
@@ -39,10 +38,15 @@ def changeOrder(order, newprice, position, itemsinlist):
 
 	thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
 	box = cm.Area(thing.left + 100, thing.top + 21, 300, 19)
-	ocr = cm.grabandocr(box)
+	ocr = cm.grabandocr(box).splitlines()[1:]
+	ocrname = ""
+	for line in ocr:
+		if(len(line.split()) > 11):
+			ocrname += line.split()[-1] + " "
 	print("checking if we clicked the right order...")
-	print("itemname: " + itemname + ", ocr: " + ocr)
-	if cm.similar(ocr, itemname) < 0.5:
+	print("itemname: " + itemname.lower() + ", ocrname: " + ocrname)
+	if cm.similar(ocrname.lower(), itemname.lower()) < 0.5:
+		print("failed similar check")
 		cm.clickxy(thing.left + 265, thing.top + 192)
 		pyautogui.sleep(0.2)
 		refreshAllOrders()
@@ -71,7 +75,6 @@ def cancelOrder(order):
 
 	position, itemsinlist = getOrderPosition(order)
 	print("cancelling buyorder: " + api.getNameFromID(order.typeid))
-	cm.clickMyOrders()
 
 	if order.bid:
 		actingPoint, listheight = variables.bidaplh
@@ -111,9 +114,8 @@ def refreshAllOrders():
 			oldorders += ihcopy.sellorderlist
 	print("oldorders after grabbing from ih:")
 	print(oldorders)
-	cm.clickMyOrders()
 	pyautogui.sleep(2)
-	cm.clickPointPNG('imgs/myordersexport.png', 10, 10, cache=True)
+	cm.exportMyOrders()
 	pyautogui.sleep(3)
 	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
 	if thing is not None:
@@ -140,9 +142,14 @@ def refreshAllOrders():
 				curorder.volremaining = no.volremaining
 				if(curorder.orderid == -1):
 					curorder.orderid = no.orderid
+				curorder.issuedate = no.issuedate
 				break
-		curorder.finished = not any(areOrdersTheSame(oo, no) for no in neworders)
+		curorder.finished = (not any(areOrdersTheSame(oo, no) for no in neworders) and cm.getEVETimestamp() - oo.issuedate > 20)
 		newfromoldorders.append(curorder)
+	#the order export can be heavily delayed sometimes, so we just add old orders that are freshly made 
+	for oo in oldorders:
+		if (not any(areOrdersTheSame(nfo, oo) for nfo in newfromoldorders) and cm.getEVETimestamp() - oo.issuedate < 20):
+			newfromoldorders.append(oo)
 	#sort each neworder back into the itemhandlers
 	for itemhandler in itemhandlerlist:
 		itemhandler.sellorderlist = []
@@ -160,9 +167,8 @@ def refreshAllOrders():
 #loads all orders from export, overwriting old ones
 def loadOrders():
 	itemhandlerlist = variables.itemhandlerlist
-	cm.clickMyOrders()
 	pyautogui.sleep(2)
-	cm.clickPointPNG('imgs/myordersexport.png', 10, 10, cache=True)
+	cm.exportMyOrders()
 	pyautogui.sleep(3)
 	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
 	if thing is not None:
@@ -189,7 +195,6 @@ def loadOrders():
 				else:
 					itemhandler.sellorderlist.append(no)
 
-
 def sellitemininventory(typeid, price):
 	item = api.getNameFromID(typeid)
 	cm.clickPointPNG('imgs/inventorytopright.png', 0, 25, 2, cache=True)
@@ -197,7 +202,7 @@ def sellitemininventory(typeid, price):
 	pyautogui.typewrite(item, interval=0.03)
 
 	thing = pyautogui.locateOnScreen('imgs/inventoryitemhangar.png')
-	inventorylist = cm.Area(thing.left + 25, thing.top + 70, 1000, 250)
+	inventorylist = cm.Area(thing.left + 25, thing.top + 70, 500, 250)
 
 	pyautogui.sleep(1)
 
@@ -250,7 +255,6 @@ def sellitemininventory(typeid, price):
 	return 0
 
 def buyorder(typeid, price, quantity):
-	cm.clickDetails()
 	cm.openItem(typeid)
 	pyautogui.sleep(3)
 	thing = pyautogui.locateOnScreen('imgs/placebuyorder.png')
@@ -356,18 +360,33 @@ def getOrderPosition(wantedorder):
 def getGoodPrices(typeid):
 	toporders = getTopOrders(typeid)
 	buyprice, sellprice = -1, -1
-	highestbidderflag = False
+	buyhighestbidderflag = False
+	sellhighestbidderflag = False
 	for o in toporders[0]:
 		if(o.volremaining > variables.minquantity):
+			buyhighestbidderflag = any(areOrdersTheSame(o, co) for co in getOrderCache())
 			buyprice = o.price
+			break
+	for o in toporders[0]:
+		#if we are highest bidder, but some other order that isnt ours has the same price as ours
+		if(buyhighestbidderflag and buyprice == o.price and not any(areOrdersTheSame(o, co) for co in getOrderCache())):
+			#we set highestbidder to false so we can overbid people that have the same price as us
+			buyhighestbidderflag = False
 			break
 	#highest bidder checks for sell orders
 	for o in toporders[1]:
 		if(o.volremaining > variables.minquantity):
-			highestbidderflag = any(areOrdersTheSame(o, co) for co in getOrderCache())
+			sellhighestbidderflag = any(areOrdersTheSame(o, co) for co in getOrderCache())
 			sellprice = o.price
 			break
-	return (buyprice, sellprice, highestbidderflag)
+	for o in toporders[1]:
+		if(sellhighestbidderflag and sellprice == o.price and not any(areOrdersTheSame(o, co) for co in getOrderCache())):
+			sellhighestbidderflag = False
+			break
+	print("finished getgoodprices")
+	returntuple = (buyprice, sellprice, buyhighestbidderflag, sellhighestbidderflag)
+	print(returntuple)
+	return returntuple
 
 def buyItem(itemhandler, goodprices):
 	quantity = itemhandler.volume
@@ -405,6 +424,20 @@ def sellItem(itemhandler, goodprices):
 	#this line sets the orderid from -1 to something else
 	refreshAllOrders()
 
+def getPriorityItemhandlers():
+	priorlist = []
+	normalhandlers = []
+	for ih in variables.itemhandlerlist:
+		if ih.buyorder is not None and ih.buyorder.hasbeenoverbid and ih.buyorder.canChange():
+			priorlist.append(ih)
+			break
+		for so in ih.sellorderlist:
+			if(so.hasbeenoverbid and so.canChange()):
+				priorlist.append(ih)
+				break
+		normalhandlers.append(ih)
+	return priorlist, normalhandlers
+
 def refreshUnprofitable(itemhandler, goodprices):
 	prices = goodprices
 	pricemargin = (prices[1] - prices[0]) / prices[1]
@@ -413,33 +446,44 @@ def refreshUnprofitable(itemhandler, goodprices):
 def checkAndUnderBid(itemhandler, goodprices):
 	prices = goodprices
 	#manage buyorder
-	if itemhandler.buyorder is not None and itemhandler.buyorder.canChange():
+	if itemhandler.buyorder is not None:
+		highestBidder = prices[2]
 		curPrice = prices[0]
 		if(curPrice == -1):
 			print("Warning, not adjusting item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
 		else:
 			print("curprice of item called \"" + api.getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
-			if(curPrice > float(itemhandler.buyorder.price)):
-				print("Adjusting buyorder!")
-				position, itemsinlist = getOrderPosition(itemhandler.buyorder)
-				newprice = round(curPrice + random.random() / 7 + 0.01, 2)
-				print("Bidding for newprice: " + str(newprice))
-				changeOrder(itemhandler.buyorder, newprice, position, itemsinlist)
+			if(curPrice > float(itemhandler.buyorder.price) and not highestBidder):
+				if itemhandler.buyorder.canChange():
+					itemhandler.buyorder.hasbeenoverbid = False
+					print("Adjusting buyorder!")
+					position, itemsinlist = getOrderPosition(itemhandler.buyorder)
+					newprice = round(curPrice + random.random() / 15 + 0.02, 2)
+					print("Bidding for newprice: " + str(newprice))
+					changeOrder(itemhandler.buyorder, newprice, position, itemsinlist)
+				else:
+					itemhandler.buyorder.hasbeenoverbid = True
 	#manage sellorders
 	#this makes all of your sellorders have the same price
 	if itemhandler.sellorderlist:
-		highestBidder = prices[2]
-		for sellorder in itemhandler.sellorderlist:
-			if sellorder.canChange():
-				curPrice = prices[1]
+		curPrice = prices[1]
+		targetnewprice = round(curPrice - random.random() / 15 - 0.02, 2)
+		highestBidder = prices[3]
+		if(curPrice == -1):
+			print("Warning, not adjusting item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
+		else:
+			for sellorder in itemhandler.sellorderlist:
 				print("curprice of item called \"" + api.getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
 				if(curPrice < float(sellorder.price)):
-					print("Adjusting sellorder!")
-					position, itemsinlist = getOrderPosition(sellorder)
-					newprice = round(curPrice - random.random() / 7 - 0.01, 2)
-					#if we are already top order, make this order the same as that one, so we dont onderbid ourselves
-					if highestBidder:
-						newprice = curPrice
-					print("Bidding for newprice: " + str(newprice))
-					changeOrder(sellorder, newprice, position, itemsinlist)
+					if sellorder.canChange():
+						sellorder.hasbeenoverbid = False
+						if highestBidder:
+							continue
+						print("Adjusting sellorder!")
+						position, itemsinlist = getOrderPosition(sellorder)
+						#if we are already top order, make this order the same as that one, so we dont onderbid ourselves
+						print("Bidding for newprice: " + str(newprice))
+						changeOrder(sellorder, targetnewprice, position, itemsinlist)
+					else:
+						sellorder.hasbeenoverbid = True
 

@@ -20,19 +20,18 @@ import pickle
 
 variables.init()
 
-api.fetchItemHandlers()
-
-for ih in variables.itemhandlerlist:
-	print(ih.__dict__)
-
 #close undock window
 cm.clickPointPNG('imgs/undock.png', 173, 3)
 pyautogui.sleep(1)
-cm.clickMyOrders()
 variables.bidaplh = cm.getAPandLH(True)
 variables.sellaplh = cm.getAPandLH(False)
 
+api.fetchItemHandlers()
+
 loadOrders()
+
+for ih in variables.itemhandlerlist:
+	print(ih.__dict__)
 
 def connectionLost():
 	cl = pyautogui.locateOnScreen("imgs/connectionlost.png", confidence=0.9)
@@ -40,8 +39,8 @@ def connectionLost():
 		#we lost connection, click quit
 		point = cm.Point(cl.left + 169, cl.top + 194)
 		cm.clickPoint(point, 1)
-		#wait six minutes for internet to come back
-		pyautogui.sleep(360)
+		#wait 20 minutes for internet to come back or eve to restart
+		pyautogui.sleep(1200)
 		cm.clickPointPNG("imgs/launchgroup.png", 10, 10)
 		cm.clickPointPNG("imgs/playnow.png", 10, 10)
 		#wait for game to start
@@ -56,20 +55,32 @@ def connectionLost():
 #run for about 9 hours
 tradedaystart = cm.getEVETimestamp()
 while cm.getEVETimestamp() - tradedaystart < 3600 * 7.5:
-	for itemhandler in variables.itemhandlerlist:
+	priorlist, normallist = getPriorityItemhandlers()
+	for nih in normallist:
 		connectionLost()
-		print("handling itemhandler: " + api.getNameFromID(itemhandler.typeid))
-		itemhandler.handle()
+		if priorlist:
+			print("handling prioritised itemhandler: " + api.getNameFromID(priorlist[0]))
+			priorlist[0].handle()
+			del priorlist[0]
+		print("handling itemhandler: " + api.getNameFromID(nih.typeid))
+		nih.handle()
+
+print("cancelling all buyorders")
+for ih in variables.itemhandlerlist:
+	if itemhandler.buyorder is not None:
+		cancelOrder(itemhandler.buyorder)
 
 while cm.getEVETimestamp() - tradedaystart < 3600 * 9:
-	print("cancelling all buyorders")
-	for idx, ih in enumerate(variables.itemhandlerlist):
-		cancelOrder(itemhandler.buyorder)
-		if(not itemhandler.sellorderlist):
-			#stop trading items that have sold out at this point
-			del variables.itemhandlerlist[idx]
+	priorlist, normallist = getPriorityItemhandlers()
+	for nih in normallist:
 		connectionLost()
-		itemhandler.handle()
+		if priorlist:
+			print("handling prioritised itemhandler: " + api.getNameFromID(priorlist[0]))
+			priorlist[0].handle(nomorebuy=True)
+			del priorlist[0]
+		print("handling itemhandler: " + api.getNameFromID(itemhandler.typeid))
+		if nih.sellorderlist:
+			nih.handle(nomorebuy=True)
 print("cancelling all sellorders")
 for idx, ih in enumerate(variables.itemhandlerlist):
 	for so in ih.sellorderlist:

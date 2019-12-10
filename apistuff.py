@@ -6,6 +6,7 @@ import common as cm
 from aiohttp import ClientSession
 import variables
 import orderstuff
+import math
 
 async def agetNameFromID(typeid):
 	async with ClientSession() as session:
@@ -120,16 +121,20 @@ def setItemVolumes(simpleitemslist):
 def fetchItemHandlers():
 	itemhandlerlist = variables.itemhandlerlist
 
-	if not itemhandlerlist:
-		for _ in range(8):
-			itemhandlerlist.append(cm.ItemHandler(-1,-1,-1))
+	for idx, ih in enumerate(itemhandlerlist):
+		if(ih.unprofitable):
+			del itemhandlerlist[idx]
+
+	while len(itemhandlerlist) < variables.maxhandlers:
+		itemhandlerlist.append(cm.ItemHandler(-1,-1,-1))
 
 	print("fetching tradable items...")
 	simpleitems = collectItems()
 	goodmarginsimpleitems = []
 	for si in simpleitems:
 		if(variables.maxmargin > si.margin() > variables.minmargin):
-			if(si.lowestsell - si.highestbuy > 1000):
+			#todo add setting for 750
+			if(si.lowestsell - si.highestbuy > 750):
 				goodmarginsimpleitems.append(si)
 	setItemVolumes(goodmarginsimpleitems)
 	tradableitems = []
@@ -147,17 +152,20 @@ def fetchItemHandlers():
 	for ti in tradableitems:
 		if(len(itemhandlerlist) == variables.maxhandlers and not(any(ih.typeid == -1 for ih in itemhandlerlist))):
 			break
-		print("initiating itemhandler: " + getNameFromID(ti.typeid))
-		if itemhandlerlist[idx].unprofitable or itemhandlerlist[idx].typeid == -1:
-			capitalpercentage = ti.volume / volumesum
-			investition = variables.capital * capitalpercentage
-			buyprice = orderstuff.getGoodPrices(ti.typeid)[0]
-			if(buyprice == -1):
-				print("Warning, not adding itemhandler: " + getNameFromID(ti.typeid) + " because there is no good price.")
-				continue
-			volume = math.ceil(investition / buyprice)
-			itemhandlerlist[idx] = cm.ItemHandler(ti.typeid, investition, volume)
-			idx += 1
+		if not(any(ih.typeid == ti.typeid for ih in itemhandlerlist)):
+			if itemhandlerlist[idx].typeid == -1:
+				print("initiating itemhandler: " + getNameFromID(ti.typeid))
+				capitalpercentage = ti.volume / volumesum
+				investition = variables.capital * capitalpercentage
+				buyprice = orderstuff.getGoodPrices(ti.typeid)[0]
+				if(buyprice == -1):
+					print("Warning, not adding itemhandler: " + getNameFromID(ti.typeid) + " because there is no good price.")
+					continue
+				volume = math.ceil(investition / buyprice)
+				itemhandlerlist[idx] = cm.ItemHandler(ti.typeid, investition, volume)
+				idx += 1
+			else:
+				idx += 1
 
 	if(len(itemhandlerlist) > variables.maxhandlers):
 		print("exceeded maxhandlers")
