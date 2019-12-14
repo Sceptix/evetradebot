@@ -30,5 +30,5 @@ def init():
 				maxhandlers = int(val)
 			elif key == "tesseractpath":
 				tesseractpath = val
-			elif key == "sleepmultiplier"
+			elif key == "sleepmultiplier":
 				sleepmultiplier = float(val)

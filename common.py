@@ -15,7 +15,7 @@ def getEVETimestamp():
 	return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()
 
 def sleep(time):
-	cm.sleep(variables.sleepmultiplier * time)
+	pyautogui.sleep(variables.sleepmultiplier * time)
 
 class Point:
 	def __init__(self, xin, yin):
@@ -118,7 +118,7 @@ class ItemHandler:
 
 def clickPoint(point, clicks=1, right=False):
 	pyautogui.moveTo(point.x, point.y)
-	cm.sleep(0.2)
+	sleep(0.2)
 	if right:
 		pyautogui.click(button='right', clicks=clicks)
 	else:
@@ -146,7 +146,7 @@ def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False, cache=F
 
 def clickxy(x, y, clicks=1, right=False):
 	pyautogui.moveTo(x, y)
-	cm.sleep(0.2)
+	sleep(0.2)
 	if right:
 		pyautogui.click(button='right', clicks=clicks)
 	else:
@@ -170,7 +170,7 @@ def getAPandLH(bid):
 
 def exportMyOrders():
 	clickPointPNG('imgs/marketorders.png', 6, 6)
-	cm.sleep(0.2)
+	sleep(0.2)
 	pyautogui.move(10, 22)
 	pyautogui.click()
 
@@ -180,7 +180,7 @@ def search_market(item):
 	pyautogui.doubleClick(pos.left - 70, pos.top + pos.height / 2)
 	pyautogui.typewrite(['backspace'])
 	pyautogui.typewrite(item, interval=0.03)
-	cm.sleep(0.3)
+	sleep(0.3)
 	pyautogui.moveTo(pos.left + pos.width / 2, pos.top + pos.height / 2)
 	pyautogui.click(pos.left + pos.width / 2, pos.top + pos.height / 2)
 
@@ -210,14 +210,14 @@ def openItem(typeid):
 	thing = pyautogui.locateOnScreen('imgs/regionalmarkettopleft.png', 0.6)
 	thing2 = pyautogui.locateOnScreen('imgs/search.png')
 	search_market(itemname)
-	cm.sleep(0.3)
+	sleep(0.3)
 	searchareacapturepos = Area(thing.left, thing.top + 100, thing2.left - thing.left + 50, 400)
 
 	for loopidx in range(10):
 		if loopidx > 5:
 			search_market(itemname)
-			cm.sleep(0.3)
-		cm.sleep(1.2)
+			sleep(0.3)
+		sleep(1.2)
 		ocr = grabandocr(searchareacapturepos)
 		ocrlines = ocr.splitlines()[1:]
 		if(len(ocrlines) == 0):

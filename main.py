@@ -13,7 +13,7 @@ import os
 from PIL import Image, ImageGrab, ImageFilter, ImageOps
 import apistuff as api
 from orderstuff import *
-import common
+import common as cm
 import variables
 import random
 import pickle
