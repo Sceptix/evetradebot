@@ -16,8 +16,8 @@ def init():
 		for line in settings:
 			if line.isspace():
 				continue
-			print(line.split(None, 1))
-			(key, val) = line.split(None, 1)
+			print(line.strip().split(None, 1))
+			(key, val) = line.strip().split(None, 1)
 			if key == "minmargin":
 				minmargin = float(val)
 			elif key == "maxmargin":

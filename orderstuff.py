@@ -1,6 +1,7 @@
 import time
 import sys
 import pyautogui
+import pyperclip
 import os
 import csv
 import math
@@ -52,9 +53,18 @@ def changeOrder(order, newprice, position, itemsinlist):
 		refreshAllOrders()
 		changeOrder(order, newprice, position, itemsinlist)
 		return
-
-	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(str(newprice), interval=0.15)
+	pyautogui.hotkey('ctrl', 'c')
+	realprice = pyperclip.paste()
+	#todo orders shouldnt change more than 0.2, but maybe make a setting for this
+	if(abs(float(newprice) - float(realprice)) > 0.2):
+		print("failed realprice check")
+		cm.clickxy(thing.left + 265, thing.top + 192)
+		cm.sleep(0.2)
+		refreshAllOrders()
+		changeOrder(order, newprice, position, itemsinlist)
+		return
+	cm.safetypewrite(newprice)
+	cm.sleep(0.2)
 	pyautogui.typewrite(['enter'])
 	cm.sleep(0.5)
 	thing = pyautogui.locateOnScreen("imgs/warning.png", confidence=0.9)
@@ -200,8 +210,8 @@ def loadOrders():
 def sellitemininventory(typeid, price):
 	item = api.getNameFromID(typeid)
 	cm.clickPointPNG('imgs/inventorytopright.png', 0, 25, 2, cache=True)
-	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(item, interval=0.15)
+	cm.sleep(0.2)
+	cm.safetypewrite(item)
 
 	thing = pyautogui.locateOnScreen('imgs/inventoryitemhangar.png')
 	inventorylist = cm.Area(thing.left + 25, thing.top + 70, 500, 250)
@@ -242,16 +252,18 @@ def sellitemininventory(typeid, price):
 
 					#set price
 					pyautogui.moveTo(pricefield.x, pricefield.y)
-					cm.sleep(0.1)
+					cm.sleep(0.3)
 					pyautogui.doubleClick(pricefield.x, pricefield.y)
-					pyautogui.typewrite(['backspace'])
-					pyautogui.typewrite(str(price), interval=0.15)
+					cm.safetypewrite(price)
 
 					cm.clickPoint(sellbutton)
 					cm.sleep(0.5)
 					thing = pyautogui.locateOnScreen('imgs/sellitemconfirm.png')
 					confirmbutton = cm.Point( thing.left +145 , thing.top + 193)
 					cm.clickPoint(confirmbutton)
+					thing = pyautogui.locateOnScreen("imgs/warning.png", confidence=0.9)
+					if thing is not None:
+						cm.clickPointPNG("imgs/yesno.png", 20, 10)
 
 					return 1
 	return 0
@@ -276,13 +288,11 @@ def buyorder(typeid, price, quantity):
 	buything = pyautogui.locateOnScreen('imgs/buyandcancel.png')
 	buybutton = cm.Point( buything.left + 25 , buything.top + 7)
 	cm.clickPoint(bidpricefield, 2)
-	cm.sleep(0.1)
-	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(str(price), interval=0.15)
+	cm.sleep(0.3)
+	cm.safetypewrite(price)
 	cm.clickPoint(quantityfield, 2)
-	cm.sleep(0.1)
-	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(str(quantity), interval=0.15)
+	cm.sleep(0.3)
+	cm.safetypewrite(quantity)
 	cm.clickPoint(duration)
 	cm.clickPoint(threemonths)
 	cm.clickPoint(buybutton, 1)
@@ -290,6 +300,9 @@ def buyorder(typeid, price, quantity):
 	thing = pyautogui.locateOnScreen('imgs/confirmorder.png')
 	confirmyes = cm.Point( thing.left + 149 , thing.top + 197)
 	cm.clickPoint(confirmyes)
+	thing = pyautogui.locateOnScreen("imgs/warning.png", confidence=0.9)
+	if thing is not None:
+		cm.clickPointPNG("imgs/yesno.png", 20, 10)
 
 #returns the top six buy and sell orders
 def getTopOrders(typeid):

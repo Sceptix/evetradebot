@@ -168,6 +168,18 @@ def getAPandLH(bid):
 	actingPoint = Point(actingpointthing.left + 26, actingpointthing.top + 40)
 	return (actingPoint, listheight)
 
+def safetypewrite(text):
+	while True:
+		pyautogui.typewrite(['backspace'])
+		pyautogui.typewrite(str(text), interval=0.15*variables.sleepmultiplier)
+		cm.sleep(0.1)
+		pyautogui.hotkey('ctrl', 'a')
+		cm.sleep(0.1)
+		pyautogui.hotkey('ctrl', 'c')
+		realtext = pyperclip.paste()
+		if(str(text) == str(realtext)):
+			return
+
 def exportMyOrders():
 	clickPointPNG('imgs/marketorders.png', 6, 6)
 	sleep(0.2)
@@ -178,8 +190,7 @@ def search_market(item):
 	pos = pyautogui.locateOnScreen('imgs/search.png')
 	pyautogui.moveTo(pos.left - 70, pos.top + pos.height / 2)
 	pyautogui.doubleClick(pos.left - 70, pos.top + pos.height / 2)
-	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(item, interval=0.03)
+	safetypewrite(item)
 	sleep(0.3)
 	pyautogui.moveTo(pos.left + pos.width / 2, pos.top + pos.height / 2)
 	pyautogui.click(pos.left + pos.width / 2, pos.top + pos.height / 2)
