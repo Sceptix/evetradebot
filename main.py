@@ -22,7 +22,7 @@ variables.init()
 
 #close undock window
 cm.clickPointPNG('imgs/undock.png', 173, 3)
-pyautogui.sleep(1)
+cm.sleep(1)
 variables.bidaplh = cm.getAPandLH(True)
 variables.sellaplh = cm.getAPandLH(False)
 
@@ -40,13 +40,13 @@ def connectionLost():
 		point = cm.Point(cl.left + 169, cl.top + 194)
 		cm.clickPoint(point, 1)
 		#wait 20 minutes for internet to come back or eve to restart
-		pyautogui.sleep(1200)
+		cm.sleep(1200)
 		cm.clickPointPNG("imgs/launchgroup.png", 10, 10)
 		cm.clickPointPNG("imgs/playnow.png", 10, 10)
 		#wait for game to start
-		pyautogui.sleep(45)
+		cm.sleep(45)
 		cm.clickxy(470, 420)
-		pyautogui.sleep(45)
+		cm.sleep(45)
 		#close undock window
 		cm.clickPointPNG('imgs/undock.png', 173, 3)
 

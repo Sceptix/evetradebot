@@ -21,7 +21,7 @@ def changeOrder(order, newprice, position, itemsinlist):
 	else:
 		actingPoint, listheight = variables.sellaplh
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
-	pyautogui.sleep(0.2)
+	cm.sleep(0.2)
 	
 	#this scrolls so the order is visible, and adjusts the position
 	itemsfitinlist = math.ceil(listheight / 20)
@@ -31,10 +31,10 @@ def changeOrder(order, newprice, position, itemsinlist):
 		pyautogui.scroll(int(-130 * itemsfitinlist * pagescrollcount))
 	pyautogui.move(0, 20 * position)
 	pyautogui.click(button='right', clicks=1)
-	pyautogui.sleep(0.2)
+	cm.sleep(0.2)
 	pyautogui.move(35, 10)
 	pyautogui.click()
-	pyautogui.sleep(0.5)
+	cm.sleep(0.5)
 
 	thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
 	box = cm.Area(thing.left + 100, thing.top + 21, 300, 19)
@@ -48,15 +48,15 @@ def changeOrder(order, newprice, position, itemsinlist):
 	if cm.similar(ocrname.lower(), itemname.lower()) < 0.5:
 		print("failed similar check")
 		cm.clickxy(thing.left + 265, thing.top + 192)
-		pyautogui.sleep(0.2)
+		cm.sleep(0.2)
 		refreshAllOrders()
 		changeOrder(order, newprice, position, itemsinlist)
 		return
 
 	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(str(newprice), interval=0.03)
+	pyautogui.typewrite(str(newprice), interval=0.15)
 	pyautogui.typewrite(['enter'])
-	pyautogui.sleep(0.5)
+	cm.sleep(0.5)
 	thing = pyautogui.locateOnScreen("imgs/warning.png", confidence=0.9)
 	if thing is not None:
 		cm.clickPointPNG("imgs/yesno.png", 20, 10)
@@ -81,7 +81,7 @@ def cancelOrder(order):
 	else:
 		actingPoint, listheight = variables.sellaplh
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
-	pyautogui.sleep(0.2)
+	cm.sleep(0.2)
 	
 	#this scrolls so the order is visible, and adjusts the position
 	itemsfitinlist = math.ceil(listheight / 20)
@@ -91,7 +91,7 @@ def cancelOrder(order):
 		pyautogui.scroll(int(-130 * itemsfitinlist * pagescrollcount))
 	pyautogui.move(0, 20 * position)
 	pyautogui.click(button='right', clicks=1)
-	pyautogui.sleep(0.2)
+	cm.sleep(0.2)
 	pyautogui.move(40, 115)
 	pyautogui.click()
 	order = None
@@ -114,9 +114,9 @@ def refreshAllOrders():
 			oldorders += ihcopy.sellorderlist
 	print("oldorders after grabbing from ih:")
 	print(oldorders)
-	pyautogui.sleep(2)
+	cm.sleep(2)
 	cm.exportMyOrders()
-	pyautogui.sleep(3)
+	cm.sleep(3)
 	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
 	if thing is not None:
 		okbutton = cm.Point(thing.left + 169, thing.top + 194)
@@ -169,9 +169,9 @@ def refreshAllOrders():
 #loads all orders from export, overwriting old ones
 def loadOrders():
 	itemhandlerlist = variables.itemhandlerlist
-	pyautogui.sleep(2)
+	cm.sleep(2)
 	cm.exportMyOrders()
-	pyautogui.sleep(3)
+	cm.sleep(3)
 	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
 	if thing is not None:
 		okbutton = cm.Point(thing.left + 169, thing.top + 194)
@@ -201,12 +201,12 @@ def sellitemininventory(typeid, price):
 	item = api.getNameFromID(typeid)
 	cm.clickPointPNG('imgs/inventorytopright.png', 0, 25, 2, cache=True)
 	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(item, interval=0.03)
+	pyautogui.typewrite(item, interval=0.15)
 
 	thing = pyautogui.locateOnScreen('imgs/inventoryitemhangar.png')
 	inventorylist = cm.Area(thing.left + 25, thing.top + 70, 500, 250)
 
-	pyautogui.sleep(1)
+	cm.sleep(1)
 
 	box = inventorylist.toAbsTuple()
 	ocr = cm.grabandocr(box)
@@ -217,7 +217,7 @@ def sellitemininventory(typeid, price):
 			mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
 			mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
 			cm.clickxy(mousex, mousey, clicks=1, right=True)
-			pyautogui.sleep(0.2)
+			cm.sleep(0.2)
 
 			box = (mousex + 15,mousey + 2 ,mousex + 15 + 135, mousey + 3 + 200)
 			ocr = cm.grabandocr(box)
@@ -227,7 +227,7 @@ def sellitemininventory(typeid, price):
 					mousex = mousex + 18 + int(s.split()[6]) / 4 + 5
 					mousey = mousey + 3 + int(s.split()[7]) / 4 + 5
 					cm.clickxy(mousex, mousey)
-					pyautogui.sleep(5)
+					cm.sleep(5)
 					#todo replace this with clickpointpng
 					thing = pyautogui.locateOnScreen('imgs/sellitems.png')
 					pricefield = cm.Point( thing.left + thing.width / 2 , thing.top + 80)
@@ -242,13 +242,13 @@ def sellitemininventory(typeid, price):
 
 					#set price
 					pyautogui.moveTo(pricefield.x, pricefield.y)
-					pyautogui.sleep(0.1)
+					cm.sleep(0.1)
 					pyautogui.doubleClick(pricefield.x, pricefield.y)
 					pyautogui.typewrite(['backspace'])
-					pyautogui.typewrite(str(price), interval=0.03)
+					pyautogui.typewrite(str(price), interval=0.15)
 
 					cm.clickPoint(sellbutton)
-					pyautogui.sleep(0.5)
+					cm.sleep(0.5)
 					thing = pyautogui.locateOnScreen('imgs/sellitemconfirm.png')
 					confirmbutton = cm.Point( thing.left +145 , thing.top + 193)
 					cm.clickPoint(confirmbutton)
@@ -258,16 +258,16 @@ def sellitemininventory(typeid, price):
 
 def buyorder(typeid, price, quantity):
 	cm.openItem(typeid)
-	pyautogui.sleep(3)
+	cm.sleep(3)
 	thing = pyautogui.locateOnScreen('imgs/placebuyorder.png')
 	buyorderpos = cm.Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
 	cm.clickPoint(buyorderpos)
-	pyautogui.sleep(2)
+	cm.sleep(2)
 	thing = pyautogui.locateOnScreen('imgs/buyorderadvanced.png')
 	if thing is not None:
 		advanced = cm.Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
 		cm.clickPoint(advanced)
-		pyautogui.sleep(1)
+		cm.sleep(1)
 	thing = pyautogui.locateOnScreen('imgs/buyorderoriginpoint.png')
 	bidpricefield = cm.Point( thing.left + 143 , thing.top + 33)
 	quantityfield = cm.Point( thing.left + 143 , thing.top + 169)
@@ -276,17 +276,17 @@ def buyorder(typeid, price, quantity):
 	buything = pyautogui.locateOnScreen('imgs/buyandcancel.png')
 	buybutton = cm.Point( buything.left + 25 , buything.top + 7)
 	cm.clickPoint(bidpricefield, 2)
-	pyautogui.sleep(0.1)
+	cm.sleep(0.1)
 	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(str(price), interval=0.03)
+	pyautogui.typewrite(str(price), interval=0.15)
 	cm.clickPoint(quantityfield, 2)
-	pyautogui.sleep(0.1)
+	cm.sleep(0.1)
 	pyautogui.typewrite(['backspace'])
-	pyautogui.typewrite(str(quantity), interval=0.03)
+	pyautogui.typewrite(str(quantity), interval=0.15)
 	cm.clickPoint(duration)
 	cm.clickPoint(threemonths)
 	cm.clickPoint(buybutton, 1)
-	pyautogui.sleep(0.6)
+	cm.sleep(0.6)
 	thing = pyautogui.locateOnScreen('imgs/confirmorder.png')
 	confirmyes = cm.Point( thing.left + 149 , thing.top + 197)
 	cm.clickPoint(confirmyes)
@@ -294,9 +294,9 @@ def buyorder(typeid, price, quantity):
 #returns the top six buy and sell orders
 def getTopOrders(typeid):
 	cm.openItem(typeid)
-	pyautogui.sleep(2)
+	cm.sleep(2)
 	cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
-	pyautogui.sleep(3)
+	cm.sleep(3)
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	buyorders, sellorders = [], []

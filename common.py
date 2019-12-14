@@ -14,6 +14,9 @@ import pickle
 def getEVETimestamp():
 	return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()
 
+def sleep(time):
+	cm.sleep(variables.sleepmultiplier * time)
+
 class Point:
 	def __init__(self, xin, yin):
 		self.x = xin
@@ -115,7 +118,7 @@ class ItemHandler:
 
 def clickPoint(point, clicks=1, right=False):
 	pyautogui.moveTo(point.x, point.y)
-	pyautogui.sleep(0.2)
+	cm.sleep(0.2)
 	if right:
 		pyautogui.click(button='right', clicks=clicks)
 	else:
@@ -143,7 +146,7 @@ def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False, cache=F
 
 def clickxy(x, y, clicks=1, right=False):
 	pyautogui.moveTo(x, y)
-	pyautogui.sleep(0.2)
+	cm.sleep(0.2)
 	if right:
 		pyautogui.click(button='right', clicks=clicks)
 	else:
@@ -167,7 +170,7 @@ def getAPandLH(bid):
 
 def exportMyOrders():
 	clickPointPNG('imgs/marketorders.png', 6, 6)
-	pyautogui.sleep(0.2)
+	cm.sleep(0.2)
 	pyautogui.move(10, 22)
 	pyautogui.click()
 
@@ -177,6 +180,7 @@ def search_market(item):
 	pyautogui.doubleClick(pos.left - 70, pos.top + pos.height / 2)
 	pyautogui.typewrite(['backspace'])
 	pyautogui.typewrite(item, interval=0.03)
+	cm.sleep(0.3)
 	pyautogui.moveTo(pos.left + pos.width / 2, pos.top + pos.height / 2)
 	pyautogui.click(pos.left + pos.width / 2, pos.top + pos.height / 2)
 
@@ -206,23 +210,24 @@ def openItem(typeid):
 	thing = pyautogui.locateOnScreen('imgs/regionalmarkettopleft.png', 0.6)
 	thing2 = pyautogui.locateOnScreen('imgs/search.png')
 	search_market(itemname)
-	pyautogui.sleep(0.3)
+	cm.sleep(0.3)
 	searchareacapturepos = Area(thing.left, thing.top + 100, thing2.left - thing.left + 50, 400)
 
-	pyautogui.sleep(1)
-
-	for _ in range(5):
-
+	for loopidx in range(10):
+		if loopidx > 5:
+			search_market(itemname)
+			cm.sleep(0.3)
+		cm.sleep(1.2)
 		ocr = grabandocr(searchareacapturepos)
 		ocrlines = ocr.splitlines()[1:]
 		if(len(ocrlines) == 0):
+			#todo make this loop
 			print("ocr detected nothing, returning")
 			sys.exit()
 		stringdict = {}
 		curstring = ""
 		for idx, s in enumerate(ocrlines):
 			s = s.lower()
-			#if len(s.split()) > 11:
 			if(len(s.split()) <= 11 or len(s.split()[-1]) < 2):
 				if curstring:
 					stringdict[curstring.strip()] = idx - 1
@@ -240,6 +245,7 @@ def openItem(typeid):
 				bestidx = stringdict[s]
 		if (highestsim > 0.5):
 			s = ocrlines[bestidx]
+			print("clicking s because similarity is over 0.5: " + s)
 			offsetpos = searchareacapturepos
 			mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
 			mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
@@ -248,7 +254,7 @@ def openItem(typeid):
 
 		#we only get here if it didnt find an item: the item must have been in a collapsed category
 		for s in ocr.splitlines()[1:]:
-			if len(s.split()[-1]) > 3:
+			if(len(s.split()) > 11 and len(s.split()[-1]) > 3):
 				#we do NOT want to open the blueprint category
 				if not "prints" in s and not "react" in s:
 					offsetpos = searchareacapturepos
@@ -257,5 +263,5 @@ def openItem(typeid):
 					clickxy(mousex, mousey)
 					break
 	#todo find a better way to handle this
-	print("looped through item opening 5 times without success, aborting")
+	print("looped through item opening ten times without success, aborting")
 	sys.exit()
