@@ -1,7 +1,6 @@
 import time
 import sys
 import pyautogui
-import pyperclip
 import os
 import csv
 import math
@@ -53,7 +52,9 @@ def changeOrder(order, newprice, position, itemsinlist):
 		refreshAllOrders()
 		changeOrder(order, newprice, position, itemsinlist)
 		return
-	pyautogui.hotkey('ctrl', 'c')
+	pyautogui.keyDown('ctrl')
+	pyautogui.press('c')
+	pyautogui.keyUp('ctrl')
 	realprice = pyperclip.paste()
 	#todo orders shouldnt change more than 0.2, but maybe make a setting for this
 	if(abs(float(newprice) - float(realprice)) > 0.2):

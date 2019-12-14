@@ -8,7 +8,7 @@ from difflib import SequenceMatcher
 from pytz import timezone
 from datetime import datetime
 import variables
-import pickle
+import pyperclip
 
 
 def getEVETimestamp():
@@ -170,13 +170,21 @@ def getAPandLH(bid):
 
 def safetypewrite(text):
 	while True:
+		pyautogui.keyDown('ctrl')
+		pyautogui.press('a')
+		pyautogui.keyUp('ctrl')
 		pyautogui.typewrite(['backspace'])
-		pyautogui.typewrite(str(text), interval=0.15*variables.sleepmultiplier)
-		cm.sleep(0.1)
-		pyautogui.hotkey('ctrl', 'a')
-		cm.sleep(0.1)
-		pyautogui.hotkey('ctrl', 'c')
+		pyautogui.typewrite(str(text), interval=0.05*variables.sleepmultiplier)
+		sleep(0.1)
+		pyautogui.keyDown('ctrl')
+		pyautogui.press('a')
+		pyautogui.keyUp('ctrl')
+		sleep(0.1)
+		pyautogui.keyDown('ctrl')
+		pyautogui.press('c')
+		pyautogui.keyUp('ctrl')
 		realtext = pyperclip.paste()
+		print(realtext)
 		if(str(text) == str(realtext)):
 			return
 
