@@ -60,8 +60,8 @@ def changeOrder(order, newprice, position, itemsinlist):
 	pyautogui.keyUp('c')
 	pyautogui.keyUp('ctrl')
 	realprice = pyperclip.paste()
-	#todo orders shouldnt change more than 0.2, but maybe make a setting for this
-	if(abs(float(newprice) - float(realprice)) > 0.2):
+	#todo orders shouldnt change more than ten percent, but maybe make a setting for this
+	if(abs(float(newprice) - float(realprice)) / float(realprice) > 0.10):
 		print("failed realprice check")
 		cm.clickxy(thing.left + 265, thing.top + 192)
 		cm.sleep(0.2)
@@ -131,13 +131,20 @@ def refreshAllOrders():
 	print(oldorders)
 	cm.sleep(2)
 	cm.exportMyOrders()
-	cm.sleep(3)
+	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
+	for loopidx in range(10):
+		if(len(os.listdir(marketlogsfolder)) <= 0):
+			cm.sleep(0.5)
+		else
+			break
+		if loopidx == 5:
+			cm.exportMyOrders()
 	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
 	if thing is not None:
 		okbutton = cm.Point(thing.left + 169, thing.top + 194)
 		cm.clickPoint(okbutton)
 		return
-	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
+
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	neworders = []
 	with open(logfile) as export:
@@ -186,13 +193,19 @@ def loadOrders():
 	itemhandlerlist = variables.itemhandlerlist
 	cm.sleep(2)
 	cm.exportMyOrders()
-	cm.sleep(3)
+	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
+	for loopidx in range(10):
+		if(len(os.listdir(marketlogsfolder)) <= 0):
+			cm.sleep(0.5)
+		else
+			break
+		if loopidx == 5:
+			cm.exportMyOrders()
 	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
 	if thing is not None:
 		okbutton = cm.Point(thing.left + 169, thing.top + 194)
 		cm.clickPoint(okbutton)
 		return
-	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	neworders = []
 	with open(logfile) as export:
@@ -314,8 +327,14 @@ def getTopOrders(typeid):
 	cm.openItem(typeid)
 	cm.sleep(2)
 	cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
-	cm.sleep(3)
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
+	for loopidx in range(10):
+		if(len(os.listdir(marketlogsfolder)) <= 0):
+			cm.sleep(0.5)
+		else
+			break
+		if loopidx == 5:
+			cm.exportMyOrders()
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	buyorders, sellorders = [], []
 	with open(logfile) as export:

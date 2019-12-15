@@ -172,7 +172,7 @@ def safetypewrite(text):
 	while True:
 		pyautogui.keyDown('ctrl')
 		pyautogui.keyDown('a')
-		cm.sleep(0.2)
+		sleep(0.2)
 		pyautogui.keyUp('a')
 		pyautogui.keyUp('ctrl')
 		pyautogui.typewrite(['backspace'])
@@ -180,13 +180,13 @@ def safetypewrite(text):
 		sleep(0.1)
 		pyautogui.keyDown('ctrl')
 		pyautogui.keyDown('a')
-		cm.sleep(0.2)
+		sleep(0.2)
 		pyautogui.keyUp('a')
 		pyautogui.keyUp('ctrl')
 		sleep(0.1)
 		pyautogui.keyDown('ctrl')
 		pyautogui.keyDown('c')
-		cm.sleep(0.2)
+		sleep(0.2)
 		pyautogui.keyUp('c')
 		pyautogui.keyUp('ctrl')
 		realtext = pyperclip.paste()
@@ -239,7 +239,7 @@ def openItem(typeid):
 	searchareacapturepos = Area(thing.left, thing.top + 100, thing2.left - thing.left + 50, 400)
 
 	for loopidx in range(10):
-		if loopidx > 5:
+		if loopidx == 5:
 			search_market(itemname)
 			sleep(0.3)
 		sleep(1.2)
