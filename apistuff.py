@@ -1,6 +1,5 @@
 import grequests
 import json
-import time
 import asyncio
 import common as cm
 from aiohttp import ClientSession
@@ -140,7 +139,7 @@ def fetchItemHandlers():
 	tradableitems = []
 	for si in goodmarginsimpleitems:
 		if(si.volume > 30000):
-			print("id: " + str(si.typeid) + ", margin: " + str(si.margin()) + ", volume: " + str(si.volume))
+			print("name: " + str(getNameFromID(si.typeid)) + ", margin: " + str(si.margin()) + ", volume: " + str(si.volume))
 			tradableitems.append(si)
 
 

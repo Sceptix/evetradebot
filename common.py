@@ -2,7 +2,7 @@ import orderstuff
 import pyautogui
 import sys
 import apistuff as api
-from PIL import Image, ImageGrab, ImageFilter, ImageEnhance, ImageOps
+from PIL import ImageGrab, ImageFilter, ImageOps
 import pytesseract
 from difflib import SequenceMatcher
 from pytz import timezone
@@ -51,7 +51,7 @@ class Order:
 	def __repr__(self):
 		return str(self.__dict__)
 	def canChange(self):
-		return (getEVETimestamp() - self.issuedate) > 300
+		return (getEVETimestamp() - self.issuedate) > 296
 
 #general rule: every item can only ever have 2 orders belonging to it
 class ItemHandler:
@@ -62,32 +62,31 @@ class ItemHandler:
 		self.unprofitable = False
 		self.buyorder = None
 		self.sellorderlist = []
+		self.unprofitabledate = -1
 
 	def clearOrders(self):
 		self.buyorder = None
 		self.sellorderlist = []
 
 	def handle(self, nomorebuy=False):
-		print("handler: " + api.getNameFromID(self.typeid))
-		allorders = []
-		allorders += self.sellorderlist
-		allorders.append(self.buyorder)
-		print(allorders)
 		orderstuff.refreshAllOrders()
-		print("handler: " + api.getNameFromID(self.typeid))
-		allorders = []
-		allorders += self.sellorderlist
-		allorders.append(self.buyorder)
-		print(allorders)
 
 		goodprices = orderstuff.getGoodPrices(self.typeid)
 		#check unprofitable, cancel buyorder if it is
 		orderstuff.refreshUnprofitable(self, goodprices)
-		if(self.unprofitable and self.buyorder is not None and not self.sellorderlist):
+		if self.unprofitable:
+			unprofitabledate = getEVETimestamp()
+		else:
+			unprofitabledate = -1
+		#we can only cancel if it has been unprofitable for 20 minutes
+		if(self.unprofitable and self.buyorder is not None and (getEVETimestamp() - unprofitabledate > 1200)):
 			print("cancelling itemhandler: " + api.getNameFromID(self.typeid) + "'s buyorder due to unprofitability")
 			orderstuff.cancelOrder(self.buyorder)
-			print("selling itemhandler: " + api.getNameFromID(self.typeid) + "'s purchases")
+			print("trying to sell itemhandler: " + api.getNameFromID(self.typeid) + "'s purchases")
 			orderstuff.sellItem(self, goodprices)
+			if len(self.sellorderlist) == 0:
+				print("didn't have any purchases, fetching new itemhandlers from api...")
+				api.fetchItemHandlers()
 			return
 		#we only sell half of bought once per item cycle
 		if self.buyorder is not None and not self.unprofitable:
@@ -103,15 +102,15 @@ class ItemHandler:
 		#check if all sellorders are done
 		#finished is false if its not finished
 		if len(self.sellorderlist) > 0 and all(order.finished == True for order in self.sellorderlist):
-			sellorderlist = []
+			self.sellorderlist = []
 			print("itemhandler went through full trade cycle")
-			if self.unprofitable:
+			if self.unprofitable and (getEVETimestamp() - unprofitabledate > 3600):
 				print("fetching new itemhandlers from api...")
 				api.fetchItemHandlers()
 				return
 			else:
 				print("increasing volume by 5%...")
-				self.volume *= 1.05
+				self.volume = math.ceil(self.volume * 1.05)
 		
 		#update prices
 		orderstuff.checkAndUnderBid(self, goodprices)
@@ -235,20 +234,21 @@ def openItem(typeid):
 	thing = pyautogui.locateOnScreen('imgs/regionalmarkettopleft.png', 0.6)
 	thing2 = pyautogui.locateOnScreen('imgs/search.png')
 	search_market(itemname)
-	sleep(0.3)
+	sleep(1)
 	searchareacapturepos = Area(thing.left, thing.top + 100, thing2.left - thing.left + 50, 400)
 
 	for loopidx in range(10):
+		ocr = grabandocr(searchareacapturepos)
+		print("ocr: " + str(ocr))
+		ocrlines = ocr.splitlines()
+		while (len(ocrlines) == 0):
+			search_market(itemname)
+			sleep(0.2)
+			ocr = grabandocr(searchareacapturepos)
+			ocrlines = ocr.splitlines()
 		if loopidx == 5:
 			search_market(itemname)
-			sleep(0.3)
-		sleep(1.2)
-		ocr = grabandocr(searchareacapturepos)
-		ocrlines = ocr.splitlines()[1:]
-		if(len(ocrlines) == 0):
-			#todo make this loop
-			print("ocr detected nothing, returning")
-			sys.exit()
+			sleep(0.5)
 		stringdict = {}
 		curstring = ""
 		for idx, s in enumerate(ocrlines):
@@ -263,11 +263,14 @@ def openItem(typeid):
 				stringdict[curstring.strip()] = idx - 1
 		highestsim = -1
 		bestidx = 0
+		print("stringdict: " + str(stringdict))
 		for s in stringdict:
 			cursim = similar(itemname.lower(), s)
+			print("s in stringdict has sim: " + str(cursim))
 			if cursim > highestsim:
 				highestsim = cursim
 				bestidx = stringdict[s]
+				print("highestsim: " + str(highestsim) + ", bestidx: " + str(bestidx))
 		if (highestsim > 0.5):
 			s = ocrlines[bestidx]
 			print("clicking s because similarity is over 0.5: " + s)
@@ -278,7 +281,7 @@ def openItem(typeid):
 			return
 
 		#we only get here if it didnt find an item: the item must have been in a collapsed category
-		for s in ocr.splitlines()[1:]:
+		for s in ocr.splitlines():
 			if(len(s.split()) > 11 and len(s.split()[-1]) > 3):
 				#we do NOT want to open the blueprint category
 				if not "prints" in s and not "react" in s:

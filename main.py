@@ -7,16 +7,11 @@
 #make sure that the market window is spaced so "the forge" and "regional market" are on two different lines
 
 import pyautogui
-import pytesseract
-import csv
 import os
-from PIL import Image, ImageGrab, ImageFilter, ImageOps
 import apistuff as api
 from orderstuff import *
 import common as cm
 import variables
-import random
-import pickle
 
 variables.init()
 
@@ -55,15 +50,14 @@ def connectionLost():
 #run for about 9 hours
 tradedaystart = cm.getEVETimestamp()
 while cm.getEVETimestamp() - tradedaystart < 3600 * 7.5:
-	priorlist, normallist = getPriorityItemhandlers()
-	for nih in normallist:
+	for ih in variables.itemhandlerlist:
+		priorlist = getPriorityItemhandlers()
 		connectionLost()
 		if priorlist:
 			print("handling prioritised itemhandler: " + api.getNameFromID(priorlist[0]))
 			priorlist[0].handle()
-			del priorlist[0]
-		print("handling itemhandler: " + api.getNameFromID(nih.typeid))
-		nih.handle()
+		print("handling itemhandler: " + api.getNameFromID(ih.typeid))
+		ih.handle()
 
 print("cancelling all buyorders")
 for ih in variables.itemhandlerlist:
@@ -71,16 +65,15 @@ for ih in variables.itemhandlerlist:
 		cancelOrder(itemhandler.buyorder)
 
 while cm.getEVETimestamp() - tradedaystart < 3600 * 9:
-	priorlist, normallist = getPriorityItemhandlers()
-	for nih in normallist:
+	for ih in variables.itemhandlerlist:
+		priorlist = getPriorityItemhandlers()
 		connectionLost()
 		if priorlist:
 			print("handling prioritised itemhandler: " + api.getNameFromID(priorlist[0]))
-			priorlist[0].handle(nomorebuy=True)
-			del priorlist[0]
-		print("handling itemhandler: " + api.getNameFromID(itemhandler.typeid))
-		if nih.sellorderlist:
-			nih.handle(nomorebuy=True)
+			priorlist[0].handle()
+		print("handling itemhandler: " + api.getNameFromID(ih.typeid))
+		if ih.sellorderlist:
+			ih.handle(nomorebuy=True)
 print("cancelling all sellorders")
 for idx, ih in enumerate(variables.itemhandlerlist):
 	for so in ih.sellorderlist:

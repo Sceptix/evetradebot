@@ -1,4 +1,3 @@
-import time
 import sys
 import pyautogui
 import pyperclip
@@ -6,17 +5,17 @@ import os
 import csv
 import math
 import random
-import pickle
-from collections import defaultdict
 from dateutil.parser import parse as DateUtilParser
 import apistuff as api
 import common as cm
 import variables
 import copy
+import shutil
 
-def changeOrder(order, newprice, position, itemsinlist):
+def changeOrder(order, newprice):
+	position, itemsinlist = getOrderPosition(order)
 	itemname = api.getNameFromID(order.typeid)
-	print("changing order of item: " + itemname)
+	print("changing order of item: " + itemname + " in position: " + str(position))
 	if order.bid:
 		actingPoint, listheight = variables.bidaplh
 	else:
@@ -35,11 +34,11 @@ def changeOrder(order, newprice, position, itemsinlist):
 	cm.sleep(0.2)
 	pyautogui.move(35, 10)
 	pyautogui.click()
-	cm.sleep(0.5)
-
 	thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
+	while thing is None:
+		thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
 	box = cm.Area(thing.left + 100, thing.top + 21, 300, 19)
-	ocr = cm.grabandocr(box).splitlines()[1:]
+	ocr = cm.grabandocr(box).splitlines()
 	ocrname = ""
 	for line in ocr:
 		if(len(line.split()) > 11):
@@ -51,7 +50,7 @@ def changeOrder(order, newprice, position, itemsinlist):
 		cm.clickxy(thing.left + 265, thing.top + 192)
 		cm.sleep(0.2)
 		refreshAllOrders()
-		changeOrder(order, newprice, position, itemsinlist)
+		changeOrder(order, newprice)
 		return
 	cm.sleep(0.2)
 	pyautogui.keyDown('ctrl')
@@ -60,14 +59,6 @@ def changeOrder(order, newprice, position, itemsinlist):
 	pyautogui.keyUp('c')
 	pyautogui.keyUp('ctrl')
 	realprice = pyperclip.paste()
-	#todo orders shouldnt change more than ten percent, but maybe make a setting for this
-	if(abs(float(newprice) - float(realprice)) / float(realprice) > 0.10):
-		print("failed realprice check")
-		cm.clickxy(thing.left + 265, thing.top + 192)
-		cm.sleep(0.2)
-		refreshAllOrders()
-		changeOrder(order, newprice, position, itemsinlist)
-		return
 	cm.safetypewrite(newprice)
 	cm.sleep(0.2)
 	pyautogui.typewrite(['enter'])
@@ -82,10 +73,10 @@ def changeOrder(order, newprice, position, itemsinlist):
 	order.issuedate = cm.getEVETimestamp()
 
 def cancelOrder(order):
-	if(order is None or order.finished):
+	if(order is None or order.finished or not order.canChange()):
 		print("Invalid cancel, ignoring")
 		return
-	#make sure we don't click something wrong
+
 	refreshAllOrders()
 
 	position, itemsinlist = getOrderPosition(order)
@@ -97,7 +88,6 @@ def cancelOrder(order):
 		actingPoint, listheight = variables.sellaplh
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
 	cm.sleep(0.2)
-	
 	#this scrolls so the order is visible, and adjusts the position
 	itemsfitinlist = math.ceil(listheight / 20)
 	if(position >= itemsfitinlist):
@@ -107,12 +97,49 @@ def cancelOrder(order):
 	pyautogui.move(0, 20 * position)
 	pyautogui.click(button='right', clicks=1)
 	cm.sleep(0.2)
+	#clicking market details on order and checking if we clicked the right order
+	pyautogui.move(40, 68)
+	pyautogui.click()
+	cm.sleep(0.5)
+	thing = pyautogui.locateOnScreen('imgs/search.png', confidence=0.9)
+	marketnamearea = cm.Area(thing.left + 158, thing.top + 14, 375, 30)
+	ocr = cm.grabandocr(marketnamearea)
+	marketname = ""
+	for line in ocr.splitlines():
+		if len(line.split()) > 11:
+			marketname += line.split()[-1] + ' '
+	marketname = marketname.strip()
+	print("read marketname while cancelling order: " + marketname)
+	if(cm.similar(marketname.lower(), api.getNameFromID(order.typeid).lower()) < 0.5):
+		print("clicked wrong order while cancelling, retrying")
+		cancelOrder(order)
+		return
+	
+	pyautogui.moveTo(actingPoint.x, actingPoint.y)
+	cm.sleep(0.2)
+	if(position >= itemsfitinlist):
+		pagescrollcount = math.floor(position / itemsfitinlist)
+		position -= (itemsinlist % itemsfitinlist)
+		pyautogui.scroll(int(-130 * itemsfitinlist * pagescrollcount))
+	pyautogui.move(0, 20 * position)
+	pyautogui.click(button='right', clicks=1)
+	cm.sleep(0.2)
+
 	pyautogui.move(40, 115)
 	pyautogui.click()
-	order = None
+	for ih in variables.itemhandlerlist:
+		if order.bid:
+			if areOrdersTheSame(ih.buyorder, order):
+				ih.buyorder = None
+		else:
+			for so in ih.sellorderlist:
+				if areOrdersTheSame(so, order):
+					so = None
 
 #used for checking if orders are the same when orderid isnt set
 def areOrdersTheSame(o1, o2):
+	if o1 is None or o2 is None:
+		return False
 	issuedateDelta = abs(o1.issuedate - o2.issuedate)
 	aresame = ((o1.typeid == o2.typeid) and (issuedateDelta < 10) and (o1.bid == o2.bid)) or (o1.orderid == o2.orderid)
 	return aresame
@@ -120,31 +147,30 @@ def areOrdersTheSame(o1, o2):
 #refresh orders finished, volremaing and orderid
 def refreshAllOrders():
 	itemhandlerlist = variables.itemhandlerlist
-	oldorders = []
-	for itemhandler in itemhandlerlist:
-		ihcopy = copy.deepcopy(itemhandler)
-		if ihcopy.buyorder is not None:
-			oldorders.append(ihcopy.buyorder)
-		if ihcopy.sellorderlist:
-			oldorders += ihcopy.sellorderlist
-	print("oldorders after grabbing from ih:")
-	print(oldorders)
-	cm.sleep(2)
-	cm.exportMyOrders()
+	
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
-	for loopidx in range(10):
+	shutil.rmtree(marketlogsfolder)
+	os.makedirs(marketlogsfolder)
+
+	cm.exportMyOrders()
+
+	for loopidx in range(29):
 		if(len(os.listdir(marketlogsfolder)) <= 0):
 			cm.sleep(0.5)
 		else:
 			break
-		if loopidx == 5:
+		if loopidx % 6 == 5:
 			cm.exportMyOrders()
-	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
-	if thing is not None:
-		okbutton = cm.Point(thing.left + 169, thing.top + 194)
-		cm.clickPoint(okbutton)
-		return
+		thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
+		if thing is not None:
+			okbutton = cm.Point(thing.left + 169, thing.top + 194)
+			cm.clickPoint(okbutton)
+			return
 
+	if not os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
+		refreshAllOrders()
+		return
+	
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	neworders = []
 	with open(logfile) as export:
@@ -153,8 +179,16 @@ def refreshAllOrders():
 			neworders.append(cm.Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
 							int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp()))
 	os.remove(logfile)
-	print("neworders after grabbing from export:")
-	print(neworders)
+
+	oldorders = []
+	for itemhandler in itemhandlerlist:
+		ihcopy = copy.deepcopy(itemhandler)
+		if ihcopy.buyorder is not None:
+			oldorders.append(ihcopy.buyorder)
+		if ihcopy.sellorderlist:
+			oldorders += ihcopy.sellorderlist
+			
+
 	newfromoldorders = []
 	#the newfromoldorders list will contain every order even finished ones, the itemhandler will remove those in its handle func
 	for oo in oldorders:
@@ -184,28 +218,34 @@ def refreshAllOrders():
 					itemhandler.buyorder = nfo
 				else:
 					itemhandler.sellorderlist.append(nfo)
-	print("nfo:")
-	print(newfromoldorders)
-	print("rfo done.")
 
 #loads all orders from export, overwriting old ones
 def loadOrders():
 	itemhandlerlist = variables.itemhandlerlist
-	cm.sleep(2)
-	cm.exportMyOrders()
+	
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
-	for loopidx in range(10):
+	shutil.rmtree(marketlogsfolder)
+	os.makedirs(marketlogsfolder)
+
+	cm.exportMyOrders()
+
+	for loopidx in range(29):
 		if(len(os.listdir(marketlogsfolder)) <= 0):
 			cm.sleep(0.5)
 		else:
 			break
-		if loopidx == 5:
+		if loopidx % 6 == 5:
 			cm.exportMyOrders()
-	thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
-	if thing is not None:
-		okbutton = cm.Point(thing.left + 169, thing.top + 194)
-		cm.clickPoint(okbutton)
+		thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
+		if thing is not None:
+			okbutton = cm.Point(thing.left + 169, thing.top + 194)
+			cm.clickPoint(okbutton)
+			return
+
+	if not os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
+		loadOrders()
 		return
+	
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	neworders = []
 	with open(logfile) as export:
@@ -214,6 +254,13 @@ def loadOrders():
 			neworders.append(cm.Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
 							int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp()))
 	os.remove(logfile)
+	for no in neworders:
+		if not any(no.typeid == ih.typeid for ih in itemhandlerlist):
+			#todo make a new itemhandlertype that only takes care of existing orders and then stops existing
+			#it would be useful for selling leftover items and stuff
+			print("you still have an order that won't get an itemhandler, please cancel it:")
+			print(api.getNameFromID(no.typeid))
+			sys.exit()
 	#sort each neworder back into the itemhandlers
 	for itemhandler in itemhandlerlist:
 		itemhandler.sellorderlist = []
@@ -239,7 +286,8 @@ def sellitemininventory(typeid, price):
 	box = inventorylist.toAbsTuple()
 	ocr = cm.grabandocr(box)
 
-	for s in ocr.splitlines()[1:]:
+	#todo implement ocr with highestsim check
+	for s in ocr.splitlines():
 		if(s.split()[-1][:5] in item.lower()):
 			offsetpos = inventorylist
 			mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
@@ -250,7 +298,7 @@ def sellitemininventory(typeid, price):
 			box = (mousex + 15,mousey + 2 ,mousex + 15 + 135, mousey + 3 + 200)
 			ocr = cm.grabandocr(box)
 
-			for s in ocr.splitlines()[1:]:
+			for s in ocr.splitlines():
 				if(s.split()[-1] == "sell"):
 					mousex = mousex + 18 + int(s.split()[6]) / 4 + 5
 					mousey = mousey + 3 + int(s.split()[7]) / 4 + 5
@@ -325,21 +373,35 @@ def buyorder(typeid, price, quantity):
 #returns the top six buy and sell orders
 def getTopOrders(typeid):
 	cm.openItem(typeid)
-	cm.sleep(2)
-	cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
+	cm.sleep(0.2)
+
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
-	for loopidx in range(10):
+	shutil.rmtree(marketlogsfolder)
+	os.makedirs(marketlogsfolder)
+	
+	cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
+	
+	for loopidx in range(29):
 		if(len(os.listdir(marketlogsfolder)) <= 0):
 			cm.sleep(0.5)
 		else:
 			break
-		if loopidx == 5:
-			cm.exportMyOrders()
+		if loopidx % 6 == 5:
+			cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
+
+	if os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
+		getTopOrders(typeid)
+		return
+
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	buyorders, sellorders = [], []
+	exitflag = False
 	with open(logfile) as export:
 		reader = csv.DictReader(export)
 		for l in reader:
+			#if we didnt wait long enough for item to load
+			if(int(l['typeID']) != typeid):
+				exitflag = True
 			if(int(l['jumps']) != 0):
 				continue
 			o = cm.Order(typeid, int(l['orderID']), str(l['bid']) == "True", float(l['price']), int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp())
@@ -348,6 +410,8 @@ def getTopOrders(typeid):
 			else:
 				sellorders.append(o)
 	os.remove(logfile)
+	if(exitflag):
+		return getTopOrders(typeid)
 	#highest first
 	buyorders.sort(key=lambda x: x.price, reverse=True)
 	#lowest first
@@ -447,6 +511,7 @@ def sellItem(itemhandler, goodprices):
 	flag = sellitemininventory(itemhandler.typeid, sellprice)
 	if(flag == 0):
 		print("couldnt sell item from inventory, doesnt exist")
+		return
 	quantity = 0
 	if itemhandler.buyorder.finished:
 		#adjust the quantity if there are previous sellorders
@@ -463,17 +528,15 @@ def sellItem(itemhandler, goodprices):
 
 def getPriorityItemhandlers():
 	priorlist = []
-	normalhandlers = []
 	for ih in variables.itemhandlerlist:
 		if ih.buyorder is not None and ih.buyorder.hasbeenoverbid and ih.buyorder.canChange():
 			priorlist.append(ih)
-			break
+			continue
 		for so in ih.sellorderlist:
 			if(so.hasbeenoverbid and so.canChange()):
 				priorlist.append(ih)
-				break
-		normalhandlers.append(ih)
-	return priorlist, normalhandlers
+				continue
+	return priorlist
 
 def refreshUnprofitable(itemhandler, goodprices):
 	prices = goodprices
@@ -494,10 +557,9 @@ def checkAndUnderBid(itemhandler, goodprices):
 				if itemhandler.buyorder.canChange():
 					itemhandler.buyorder.hasbeenoverbid = False
 					print("Adjusting buyorder!")
-					position, itemsinlist = getOrderPosition(itemhandler.buyorder)
 					newprice = round(curPrice + random.random() / 15 + 0.02, 2)
 					print("Bidding for newprice: " + str(newprice))
-					changeOrder(itemhandler.buyorder, newprice, position, itemsinlist)
+					changeOrder(itemhandler.buyorder, newprice)
 				else:
 					itemhandler.buyorder.hasbeenoverbid = True
 	#manage sellorders
@@ -517,10 +579,9 @@ def checkAndUnderBid(itemhandler, goodprices):
 						if highestBidder:
 							continue
 						print("Adjusting sellorder!")
-						position, itemsinlist = getOrderPosition(sellorder)
 						#if we are already top order, make this order the same as that one, so we dont onderbid ourselves
-						print("Bidding for newprice: " + str(newprice))
-						changeOrder(sellorder, targetnewprice, position, itemsinlist)
+						print("Bidding for newprice: " + str(targetnewprice))
+						changeOrder(sellorder, targetnewprice)
 					else:
 						sellorder.hasbeenoverbid = True
 
