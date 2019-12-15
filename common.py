@@ -1,6 +1,7 @@
 import orderstuff
 import pyautogui
 import sys
+import math
 import apistuff as api
 from PIL import ImageGrab, ImageFilter, ImageOps
 import pytesseract
