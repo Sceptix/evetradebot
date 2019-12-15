@@ -135,7 +135,7 @@ def refreshAllOrders():
 	for loopidx in range(10):
 		if(len(os.listdir(marketlogsfolder)) <= 0):
 			cm.sleep(0.5)
-		else
+		else:
 			break
 		if loopidx == 5:
 			cm.exportMyOrders()
@@ -197,7 +197,7 @@ def loadOrders():
 	for loopidx in range(10):
 		if(len(os.listdir(marketlogsfolder)) <= 0):
 			cm.sleep(0.5)
-		else
+		else:
 			break
 		if loopidx == 5:
 			cm.exportMyOrders()
@@ -331,7 +331,7 @@ def getTopOrders(typeid):
 	for loopidx in range(10):
 		if(len(os.listdir(marketlogsfolder)) <= 0):
 			cm.sleep(0.5)
-		else
+		else:
 			break
 		if loopidx == 5:
 			cm.exportMyOrders()
