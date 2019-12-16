@@ -163,18 +163,18 @@ def refreshAllOrders():
 
 	cm.exportMyOrders()
 
-	for loopidx in range(29):
-		if(len(os.listdir(marketlogsfolder)) <= 0):
-			cm.sleep(0.5)
-		else:
+	while True:
+		if(len(os.listdir(marketlogsfolder)) > 0):
 			break
-		if loopidx % 6 == 5:
-			cm.exportMyOrders()
 		thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
 		if thing is not None:
 			okbutton = cm.Point(thing.left + 169, thing.top + 194)
 			cm.clickPoint(okbutton)
 			return
+		if loopidx % 5 == 0:
+			cm.exportMyOrders()
+		else:
+			cm.sleep(0.5)
 
 	if not os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
 		refreshAllOrders()
@@ -237,18 +237,18 @@ def loadOrders():
 
 	cm.exportMyOrders()
 
-	for loopidx in range(29):
-		if(len(os.listdir(marketlogsfolder)) <= 0):
-			cm.sleep(0.5)
-		else:
+	while True:
+		if(len(os.listdir(marketlogsfolder)) > 0):
 			break
-		if loopidx % 6 == 5:
-			cm.exportMyOrders()
 		thing = pyautogui.locateOnScreen("imgs/nobuyorsell.png", confidence=0.9)
 		if thing is not None:
 			okbutton = cm.Point(thing.left + 169, thing.top + 194)
 			cm.clickPoint(okbutton)
 			return
+		if loopidx % 5 == 0:
+			cm.exportMyOrders()
+		else:
+			cm.sleep(0.5)
 
 	if not os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
 		loadOrders()
@@ -388,13 +388,14 @@ def getTopOrders(typeid):
 	
 	cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
 	
-	for loopidx in range(29):
-		if(len(os.listdir(marketlogsfolder)) <= 0):
-			cm.sleep(0.5)
-		else:
+	while True:
+		if(len(os.listdir(marketlogsfolder)) > 0):
 			break
-		if loopidx % 6 == 5:
+		if loopidx % 5 == 0:
+			cm.openItem(typeid)
 			cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
+		else:
+			cm.sleep(0.5)
 
 	if os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
 		getTopOrders(typeid)
