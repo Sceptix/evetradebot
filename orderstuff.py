@@ -144,13 +144,22 @@ def areOrdersTheSame(o1, o2):
 	aresame = ((o1.typeid == o2.typeid) and (issuedateDelta < 10) and (o1.bid == o2.bid)) or (o1.orderid == o2.orderid)
 	return aresame
 
+def deleteMarketLogs():
+	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
+	for filename in os.listdir(marketlogsfolder):
+		file_path = os.path.join(marketlogsfolder, filename)
+		try:
+			if os.path.isfile(file_path):
+				os.unlink(file_path)
+		except:
+			print("failed deleting all files in marketlogs")
+
 #refresh orders finished, volremaing and orderid
 def refreshAllOrders():
 	itemhandlerlist = variables.itemhandlerlist
 	
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
-	shutil.rmtree(marketlogsfolder)
-	os.makedirs(marketlogsfolder)
+	deleteMarketLogs()
 
 	cm.exportMyOrders()
 
@@ -224,8 +233,7 @@ def loadOrders():
 	itemhandlerlist = variables.itemhandlerlist
 	
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
-	shutil.rmtree(marketlogsfolder)
-	os.makedirs(marketlogsfolder)
+	deleteMarketLogs()
 
 	cm.exportMyOrders()
 
@@ -376,8 +384,7 @@ def getTopOrders(typeid):
 	cm.sleep(0.2)
 
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
-	shutil.rmtree(marketlogsfolder)
-	os.makedirs(marketlogsfolder)
+	deleteMarketLogs()
 	
 	cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
 	

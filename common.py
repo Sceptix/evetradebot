@@ -176,7 +176,7 @@ def safetypewrite(text):
 		pyautogui.keyUp('a')
 		pyautogui.keyUp('ctrl')
 		pyautogui.typewrite(['backspace'])
-		pyautogui.typewrite(str(text), interval=0.05*variables.sleepmultiplier)
+		pyautogui.typewrite(str(text), interval=0.05)
 		sleep(0.1)
 		pyautogui.keyDown('ctrl')
 		pyautogui.keyDown('a')
