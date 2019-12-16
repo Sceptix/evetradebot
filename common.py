@@ -146,7 +146,7 @@ def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False, cache=F
 
 def clickxy(x, y, clicks=1, right=False):
 	pyautogui.moveTo(x, y)
-	sleep(0.2)
+	sleep(0.1)
 	if right:
 		pyautogui.click(button='right', clicks=clicks)
 	else:

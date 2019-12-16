@@ -31,13 +31,13 @@ def changeOrder(order, newprice):
 		pyautogui.scroll(int(-130 * itemsfitinlist * pagescrollcount))
 	pyautogui.move(0, 20 * position)
 	pyautogui.click(button='right', clicks=1)
-	cm.sleep(0.4)
+	cm.sleep(0.5)
 	pyautogui.move(35, 10)
 	pyautogui.click()
-	thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
+	thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.97)
 	while thing is None:
-		thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
-		cm.sleep(0.1)
+		thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.97)
+		cm.sleep(0.2)
 	box = cm.Area(thing.left + 100, thing.top + 21, 300, 19)
 	ocr = cm.grabandocr(box).splitlines()
 	ocrname = ""
@@ -49,7 +49,7 @@ def changeOrder(order, newprice):
 	if cm.similar(ocrname.lower(), itemname.lower()) < 0.5:
 		print("failed similar check")
 		cm.clickxy(thing.left + 265, thing.top + 192)
-		cm.sleep(0.2)
+		cm.sleep(0.5)
 		refreshAllOrders()
 		changeOrder(order, newprice)
 		return
