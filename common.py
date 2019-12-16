@@ -102,7 +102,7 @@ class ItemHandler:
 				return
 		#check if all sellorders are done
 		#finished is false if its not finished
-		if len(self.sellorderlist) > 0 and all(order.finished == True for order in self.sellorderlist):
+		if len(self.sellorderlist) > 0 and all(order.finished == True for order in self.sellorderlist) and self.buyorder is None:
 			self.sellorderlist = []
 			print("itemhandler went through full trade cycle")
 			if self.unprofitable and (getEVETimestamp() - unprofitabledate > 3600):
