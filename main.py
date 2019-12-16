@@ -15,6 +15,11 @@ import variables
 
 variables.init()
 
+yeet = getTopOrders(27413)
+print(yeet)
+
+sys.exit()
+
 #close undock window
 cm.clickPointPNG('imgs/undock.png', 173, 3)
 cm.sleep(1)

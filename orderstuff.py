@@ -35,9 +35,15 @@ def changeOrder(order, newprice):
 	pyautogui.move(35, 10)
 	pyautogui.click()
 	thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
-	while thing is None:
-		thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
-		cm.sleep(0.2)
+	for a in range(100):
+		if thing is None:
+			thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
+			cm.sleep(0.2)
+		else:
+			break
+	if thing is None:
+		refreshAllOrders()
+		changeOrder(order, newprice)
 	box = cm.Area(thing.left + 100, thing.top + 21, 300, 19)
 	ocr = cm.grabandocr(box).splitlines()
 	ocrname = ""
@@ -398,6 +404,7 @@ def getTopOrders(typeid):
 		if(len(os.listdir(marketlogsfolder)) > 0):
 			break
 		if loopidx % 5 == 0:
+			continue
 			cm.openItem(typeid)
 			cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
 		else:
@@ -417,6 +424,9 @@ def getTopOrders(typeid):
 			#if we didnt wait long enough for item to load
 			if(int(l['typeID']) != typeid):
 				exitflag = True
+			if(l['jumps'] is None):
+				getTopOrders(typeid)
+				return
 			if(int(l['jumps']) != 0):
 				continue
 			o = cm.Order(typeid, int(l['orderID']), str(l['bid']) == "True", float(l['price']), int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp())
