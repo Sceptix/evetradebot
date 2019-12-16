@@ -163,6 +163,7 @@ def refreshAllOrders():
 
 	cm.exportMyOrders()
 
+	loopidx = 0
 	while True:
 		if(len(os.listdir(marketlogsfolder)) > 0):
 			break
@@ -175,6 +176,7 @@ def refreshAllOrders():
 			cm.exportMyOrders()
 		else:
 			cm.sleep(0.5)
+		loopidx += 1
 
 	if not os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
 		refreshAllOrders()
@@ -237,6 +239,7 @@ def loadOrders():
 
 	cm.exportMyOrders()
 
+	loopidx = 0
 	while True:
 		if(len(os.listdir(marketlogsfolder)) > 0):
 			break
@@ -249,6 +252,7 @@ def loadOrders():
 			cm.exportMyOrders()
 		else:
 			cm.sleep(0.5)
+		loopidx += 1
 
 	if not os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
 		loadOrders()
@@ -388,6 +392,7 @@ def getTopOrders(typeid):
 	
 	cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
 	
+	loopidx = 0
 	while True:
 		if(len(os.listdir(marketlogsfolder)) > 0):
 			break
@@ -396,6 +401,7 @@ def getTopOrders(typeid):
 			cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
 		else:
 			cm.sleep(0.5)
+		loopidx += 1
 
 	if os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
 		getTopOrders(typeid)
