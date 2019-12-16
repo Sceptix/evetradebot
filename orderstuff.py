@@ -404,7 +404,6 @@ def getTopOrders(typeid):
 		if(len(os.listdir(marketlogsfolder)) > 0):
 			break
 		if loopidx % 5 == 0:
-			continue
 			cm.openItem(typeid)
 			cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
 		else:
