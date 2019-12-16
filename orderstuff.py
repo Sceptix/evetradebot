@@ -34,9 +34,9 @@ def changeOrder(order, newprice):
 	cm.sleep(0.5)
 	pyautogui.move(35, 10)
 	pyautogui.click()
-	thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.97)
+	thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
 	while thing is None:
-		thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.97)
+		thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
 		cm.sleep(0.2)
 	box = cm.Area(thing.left + 100, thing.top + 21, 300, 19)
 	ocr = cm.grabandocr(box).splitlines()
