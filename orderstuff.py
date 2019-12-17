@@ -12,6 +12,9 @@ import variables
 import copy
 import shutil
 
+def refreshOrderList():
+	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=2, cache=True)
+
 def changeOrder(order, newprice):
 	position, itemsinlist = getOrderPosition(order)
 	itemname = api.getNameFromID(order.typeid)
@@ -191,12 +194,17 @@ def refreshAllOrders():
 	
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	neworders = []
-	with open(logfile) as export:
-		reader = csv.DictReader(export)
-		for l in reader:
-			neworders.append(cm.Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
-							int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp()))
-	os.remove(logfile)
+	try:
+		with open(logfile) as export:
+			reader = csv.DictReader(export)
+			for l in reader:
+				neworders.append(cm.Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
+								int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp()))
+		os.remove(logfile)
+	except:
+		cm.sleep(5)
+		refreshAllOrders()
+		return
 
 	oldorders = []
 	for itemhandler in itemhandlerlist:
@@ -267,12 +275,18 @@ def loadOrders():
 	
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	neworders = []
-	with open(logfile) as export:
-		reader = csv.DictReader(export)
-		for l in reader:
-			neworders.append(cm.Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
-							int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp()))
-	os.remove(logfile)
+	try:
+		with open(logfile) as export:
+			reader = csv.DictReader(export)
+			for l in reader:
+				neworders.append(cm.Order(int(l['typeID']), int(l['orderID']), str(l['bid']) == "True", float(l['price']),
+								int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp()))
+		os.remove(logfile)
+	except:
+		cm.sleep(5)
+		loadOrders()
+		return
+
 	for no in neworders:
 		if not any(no.typeid == ih.typeid for ih in itemhandlerlist):
 			#todo make a new itemhandlertype that only takes care of existing orders and then stops existing
@@ -417,23 +431,27 @@ def getTopOrders(typeid):
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	buyorders, sellorders = [], []
 	exitflag = False
-	with open(logfile) as export:
-		reader = csv.DictReader(export)
-		for l in reader:
-			#if we didnt wait long enough for item to load
-			if(int(l['typeID']) != typeid):
-				exitflag = True
-			if(l['jumps'] is None):
-				getTopOrders(typeid)
-				return
-			if(int(l['jumps']) != 0):
-				continue
-			o = cm.Order(typeid, int(l['orderID']), str(l['bid']) == "True", float(l['price']), int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp())
-			if(o.bid):
-				buyorders.append(o)
-			else:
-				sellorders.append(o)
-	os.remove(logfile)
+	try:
+		with open(logfile) as export:
+			reader = csv.DictReader(export)
+			for l in reader:
+				#if we didnt wait long enough for item to load
+				if(int(l['typeID']) != typeid):
+					exitflag = True
+					break
+				if(int(l['jumps']) != 0):
+					continue
+				o = cm.Order(typeid, int(l['orderID']), str(l['bid']) == "True", float(l['price']), int(float(l['volEntered'])), int(float(l['volRemaining'])), DateUtilParser(l['issueDate']).timestamp())
+				if(o.bid):
+					buyorders.append(o)
+				else:
+					sellorders.append(o)
+		os.remove(logfile)
+	except:
+		cm.sleep(5)
+		getTopOrders(typeid)
+		return
+
 	if(exitflag):
 		return getTopOrders(typeid)
 	#highest first

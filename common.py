@@ -195,7 +195,7 @@ def safetypewrite(text):
 			return
 
 def exportMyOrders():
-	clickPointPNG('imgs/marketorders.png', 6, 6)
+	clickPointPNG('imgs/marketorders.png', 6, 6, cache=True)
 	sleep(0.2)
 	pyautogui.move(10, 22)
 	pyautogui.click()

@@ -15,11 +15,21 @@ import variables
 
 variables.init()
 
-#close undock window
-cm.clickPointPNG('imgs/undock.png', 173, 3)
-cm.sleep(1)
-variables.bidaplh = cm.getAPandLH(True)
-variables.sellaplh = cm.getAPandLH(False)
+def guiinit():
+	#close undock window
+	cm.clickPointPNG('imgs/undock.png', 173, 3)
+	if pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9) is None:
+		cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, cache=True)
+	#make regional market search results big so ocr can read better
+	thing = pyautogui.locateOnScreen('imgs/search.png', confidence=0.9)
+	pyautogui.moveTo(thing.left + 76, thing.top + 27)
+	cm.sleep(0.3)
+	pyautogui.dragRel(300, 0, 1, button='left')
+	cm.sleep(1)
+	variables.bidaplh = cm.getAPandLH(True)
+	variables.sellaplh = cm.getAPandLH(False)
+
+guiinit()
 
 api.fetchItemHandlers()
 
@@ -42,8 +52,7 @@ def connectionLost():
 		cm.sleep(45)
 		cm.clickxy(470, 420)
 		cm.sleep(45)
-		#close undock window
-		cm.clickPointPNG('imgs/undock.png', 173, 3)
+		guiinit()
 
 #underbid order loop logic
 
