@@ -140,6 +140,10 @@ def fetchItemHandlers():
 	for si in goodmarginsimpleitems:
 		if(si.volume > 30000):
 			print("name: " + str(getNameFromID(si.typeid)) + ", margin: " + str(si.margin()) + ", volume: " + str(si.volume))
+			#todo
+			#there are some items like tungsten which will generate a lot of search results and the ocr cant deal with that
+			if(getNameFromID(si.typeid) == "Tungsten"):
+				continue
 			tradableitems.append(si)
 
 
