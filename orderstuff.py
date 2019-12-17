@@ -16,6 +16,7 @@ def refreshOrderList():
 	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=2, cache=True)
 
 def changeOrder(order, newprice):
+	refreshOrderList()
 	position, itemsinlist = getOrderPosition(order)
 	itemname = api.getNameFromID(order.typeid)
 	print("changing order of item: " + itemname + " in position: " + str(position))
@@ -86,7 +87,7 @@ def cancelOrder(order):
 	if(order is None or order.finished or not order.canChange()):
 		print("Invalid cancel, ignoring")
 		return
-
+	refreshOrderList()
 	refreshAllOrders()
 
 	position, itemsinlist = getOrderPosition(order)
