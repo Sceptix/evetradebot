@@ -15,6 +15,12 @@ import variables
 
 variables.init()
 
+""" stuff = (a for a in pyautogui.locateAllOnScreen('imgs/expiresin.png') if a.left < 500)
+for a in stuff:
+	print(a)
+
+sys.exit() """
+
 def guiinit():
 	#close undock window
 	cm.clickPointPNG('imgs/undock.png', 173, 3)

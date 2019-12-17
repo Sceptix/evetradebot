@@ -14,6 +14,7 @@ import shutil
 
 def refreshOrderList():
 	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=2, cache=True)
+	cm.sleep(0.7)
 
 def changeOrder(order, newprice):
 	refreshOrderList()
