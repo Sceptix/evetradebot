@@ -28,6 +28,7 @@ def search_market(item):
 	cm.sleep(0.3)
 	pyautogui.moveTo(pos.left + pos.width / 2, pos.top + pos.height / 2)
 	pyautogui.click(pos.left + pos.width / 2, pos.top + pos.height / 2)
+	pyautogui.moveTo(69,69)
 
 def addItemToQuickbar(typeid):
 	dontShow()
@@ -63,7 +64,7 @@ def addItemToQuickbar(typeid):
 			if cursim > highestsim:
 				highestsim = cursim
 				bestidx = stringdict[s]
-		if (highestsim > 0.95):
+		if (highestsim > 0.8):
 			s = ocrlines[bestidx]
 			print("found item in search results: " + s)
 			offsetpos = searchareacapturepos
@@ -90,7 +91,8 @@ def addItemToQuickbar(typeid):
 			cm.clickxy(mousex, mousey, right=True)
 			cm.sleep(0.2)
 			cm.clickxy(mousex + 52, mousey + 29)
-			itemlist.insert(0, typeid)
+			itemlist.append(itemname)
+			itemlist.sort(key=str.lower)
 			return
 
 		if loopidx > 12:
@@ -102,7 +104,7 @@ def addItemToQuickbar(typeid):
 						offsetpos = searchareacapturepos
 						mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
 						mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
-						clickxy(mousex, mousey)
+						cm.clickxy(mousex, mousey)
 						break
 		cm.sleep(0.5)
 
@@ -112,5 +114,7 @@ def addItemToQuickbar(typeid):
 def openItem(typeid):
 	show()
 	for idx, item in enumerate(itemlist):
-		if typeid == item:
+		if api.getNameFromID(typeid) == item:
+			print(idx * 20)
 			cm.clickPointPNG('imgs/regionalmarkettopleft.png', 35, 81 + idx * 20, cache=True)
+			return

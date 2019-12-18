@@ -26,9 +26,6 @@ pyautogui.sleep(5)
 for a in stuff:
 	print(a)"""
 
-quickbar.clear()
-quickbar.dontShow()
-
 def guiinit():
 	#close undock window
 	cm.clickPointPNG('imgs/undock.png', 173, 3)
