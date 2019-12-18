@@ -6,6 +6,7 @@ from aiohttp import ClientSession
 import variables
 import orderstuff
 import math
+import quickbar
 
 async def agetNameFromID(typeid):
 	async with ClientSession() as session:
@@ -158,6 +159,7 @@ def fetchItemHandlers():
 		if not(any(ih.typeid == ti.typeid for ih in itemhandlerlist)):
 			if itemhandlerlist[idx].typeid == -1:
 				print("initiating itemhandler: " + getNameFromID(ti.typeid))
+				quickbar.addItemToQuickbar(ti.typeid)
 				capitalpercentage = ti.volume / volumesum
 				investition = variables.capital * capitalpercentage
 				buyprice = orderstuff.getGoodPrices(ti.typeid)[0]

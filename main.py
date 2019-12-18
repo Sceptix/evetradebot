@@ -5,6 +5,8 @@
 #are in Reset Settings -> Reset Supress Message settings
 #quadruple check that expires in is sorted so the arrow points upwards
 #make sure that the market window is spaced so "the forge" and "regional market" are on two different lines
+#make tooltips delay very long, reject all chat requests, leave help channel
+
 
 import pyautogui
 import os
@@ -12,14 +14,20 @@ import apistuff as api
 from orderstuff import *
 import common as cm
 import variables
+import quickbar
 
 variables.init()
 
+pyautogui.sleep(5)
+
+#todo implement check to look if "expires in" is sorted in the correct direction (lowest timestamp first)
+
 """ stuff = (a for a in pyautogui.locateAllOnScreen('imgs/expiresin.png') if a.left < 500)
 for a in stuff:
-	print(a)
+	print(a)"""
 
-sys.exit() """
+quickbar.clear()
+quickbar.dontShow()
 
 def guiinit():
 	#close undock window

@@ -132,11 +132,13 @@ def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False, cache=F
 		point = None
 		if pngname in pointcache:
 			point = pointcache[pngname]
+			point = Point(point.x + leftoffset, point.y + topoffset)
 		else:
 			thing = pyautogui.locateOnScreen(pngname, confidence=0.9)
 			if thing is not None:
-				point = Point(thing.left + leftoffset, thing.top + topoffset)
+				point = Point(thing.left, thing.top)
 				pointcache[pngname] = point
+				point = Point(thing.left + leftoffset, thing.top + topoffset)
 		if point is not None:
 			clickPoint(point, clicks, right)
 	else:
@@ -172,23 +174,24 @@ def safetypewrite(text):
 	while True:
 		pyautogui.keyDown('ctrl')
 		pyautogui.keyDown('a')
-		sleep(0.2)
+		sleep(0.3)
 		pyautogui.keyUp('a')
 		pyautogui.keyUp('ctrl')
 		pyautogui.typewrite(['backspace'])
-		pyautogui.typewrite(str(text), interval=0.05)
+		pyautogui.typewrite(str(text), interval=0.04)
 		sleep(0.1)
 		pyautogui.keyDown('ctrl')
 		pyautogui.keyDown('a')
-		sleep(0.2)
+		sleep(0.3)
 		pyautogui.keyUp('a')
 		pyautogui.keyUp('ctrl')
 		sleep(0.1)
 		pyautogui.keyDown('ctrl')
 		pyautogui.keyDown('c')
-		sleep(0.2)
+		sleep(0.5)
 		pyautogui.keyUp('c')
 		pyautogui.keyUp('ctrl')
+		sleep(0.5)
 		realtext = pyperclip.paste()
 		print(realtext)
 		if(str(text) == str(realtext)):
@@ -199,15 +202,6 @@ def exportMyOrders():
 	sleep(0.2)
 	pyautogui.move(10, 22)
 	pyautogui.click()
-
-def search_market(item):
-	pos = pyautogui.locateOnScreen('imgs/search.png')
-	pyautogui.moveTo(pos.left - 70, pos.top + pos.height / 2)
-	pyautogui.doubleClick(pos.left - 70, pos.top + pos.height / 2)
-	safetypewrite(item)
-	sleep(0.3)
-	pyautogui.moveTo(pos.left + pos.width / 2, pos.top + pos.height / 2)
-	pyautogui.click(pos.left + pos.width / 2, pos.top + pos.height / 2)
 
 def similar(a, b):
 	return SequenceMatcher(None, a, b).ratio()
@@ -230,67 +224,3 @@ def grabandocr(box):
 	ocr = ocr.lower().split("\n",1)[1]
 	return ocr
 
-def openItem(typeid):
-	itemname = api.getNameFromID(typeid)
-	thing = pyautogui.locateOnScreen('imgs/regionalmarkettopleft.png', 0.6)
-	thing2 = pyautogui.locateOnScreen('imgs/search.png')
-	search_market(itemname)
-	sleep(1)
-	searchareacapturepos = Area(thing.left, thing.top + 100, thing2.left - thing.left + 50, 400)
-
-	for loopidx in range(10):
-		ocr = grabandocr(searchareacapturepos)
-		print("ocr: " + str(ocr))
-		ocrlines = ocr.splitlines()
-		while (len(ocrlines) == 0):
-			search_market(itemname)
-			sleep(0.2)
-			ocr = grabandocr(searchareacapturepos)
-			ocrlines = ocr.splitlines()
-		if loopidx == 5:
-			search_market(itemname)
-			sleep(0.5)
-		stringdict = {}
-		curstring = ""
-		for idx, s in enumerate(ocrlines):
-			s = s.lower()
-			if(len(s.split()) <= 11 or len(s.split()[-1]) < 2):
-				if curstring:
-					stringdict[curstring.strip()] = idx - 1
-				curstring = ""
-			else:
-				curstring += s.split()[-1] + " "
-			if (idx == len(ocrlines) - 1):
-				stringdict[curstring.strip()] = idx - 1
-		highestsim = -1
-		bestidx = 0
-		print("stringdict: " + str(stringdict))
-		for s in stringdict:
-			cursim = similar(itemname.lower(), s)
-			print("s in stringdict has sim: " + str(cursim))
-			if cursim > highestsim:
-				highestsim = cursim
-				bestidx = stringdict[s]
-				print("highestsim: " + str(highestsim) + ", bestidx: " + str(bestidx))
-		if (highestsim > 0.5):
-			s = ocrlines[bestidx]
-			print("clicking s because similarity is over 0.5: " + s)
-			offsetpos = searchareacapturepos
-			mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
-			mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
-			clickxy(mousex, mousey)
-			return
-
-		#we only get here if it didnt find an item: the item must have been in a collapsed category
-		for s in ocr.splitlines():
-			if(len(s.split()) > 11 and len(s.split()[-1]) > 3):
-				#we do NOT want to open the blueprint category
-				if not "prints" in s and not "react" in s:
-					offsetpos = searchareacapturepos
-					mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
-					mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
-					clickxy(mousex, mousey)
-					break
-	#todo find a better way to handle this
-	print("looped through item opening ten times without success, aborting")
-	sys.exit()

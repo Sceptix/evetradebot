@@ -11,6 +11,7 @@ import common as cm
 import variables
 import copy
 import shutil
+import quickbar
 
 def refreshOrderList():
 	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=2, cache=True)
@@ -370,7 +371,7 @@ def sellitemininventory(typeid, price):
 	return 0
 
 def buyorder(typeid, price, quantity):
-	cm.openItem(typeid)
+	quickbar.openItem(typeid)
 	cm.sleep(3)
 	thing = pyautogui.locateOnScreen('imgs/placebuyorder.png')
 	buyorderpos = cm.Point( thing.left + thing.width / 2 , thing.top + thing.height / 2)
@@ -407,7 +408,7 @@ def buyorder(typeid, price, quantity):
 
 #returns the top six buy and sell orders
 def getTopOrders(typeid):
-	cm.openItem(typeid)
+	quickbar.openItem(typeid)
 	cm.sleep(0.2)
 
 	marketlogsfolder = os.path.expanduser('~\\Documents\\EVE\\logs\\Marketlogs')
@@ -420,7 +421,7 @@ def getTopOrders(typeid):
 		if(len(os.listdir(marketlogsfolder)) > 0):
 			break
 		if loopidx % 5 == 0:
-			cm.openItem(typeid)
+			quickbar.openItem(typeid)
 			cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
 		else:
 			cm.sleep(0.5)
