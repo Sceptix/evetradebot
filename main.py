@@ -84,8 +84,10 @@ while cm.getEVETimestamp() - tradedaystart < 3600 * 7.5:
 
 print("cancelling all buyorders")
 for ih in variables.itemhandlerlist:
-	if itemhandler.buyorder is not None:
-		cancelOrder(itemhandler.buyorder)
+	if ih.buyorder is not None:
+		cancelOrder(ih.buyorder)
+		goodprices = getGoodPrices(ih.typeid)
+		sellItem(ih, goodprices)
 
 while cm.getEVETimestamp() - tradedaystart < 3600 * 9:
 	for ih in variables.itemhandlerlist:
