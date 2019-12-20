@@ -6,11 +6,11 @@ itemlist = []
 
 def show():
 	cm.clickPointPNG('imgs/regionalmarkettopleft.png', 76, 58, cache=True)
-	cm.sleep(0.3)
+	cm.sleep(0.5)
 
 def dontShow():
 	cm.clickPointPNG('imgs/regionalmarkettopleft.png', 25, 58, cache=True)
-	cm.sleep(0.3)
+	cm.sleep(0.5)
 
 def clear():
 	show()

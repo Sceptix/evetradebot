@@ -126,6 +126,7 @@ def clickPoint(point, clicks=1, right=False):
 
 pointcache = {}
 
+
 #todo this just looks awful
 def clickPointPNG(pngname, leftoffset, topoffset, clicks=1, right=False, cache=False):
 	if cache:

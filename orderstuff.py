@@ -39,6 +39,7 @@ def changeOrder(order, newprice):
 	pyautogui.click(button='right', clicks=1)
 	cm.sleep(0.5)
 	pyautogui.move(35, 10)
+	cm.sleep(0.5)
 	pyautogui.click()
 	thing = pyautogui.locateOnScreen("imgs/modifyorder.png", confidence=0.9)
 	for a in range(100):
