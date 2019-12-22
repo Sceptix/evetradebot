@@ -30,7 +30,7 @@ def guiinit():
 	variables.bidaplh = cm.getAPandLH(True)
 	variables.sellaplh = cm.getAPandLH(False)
 
-def doTradeBot():
+def doTradeBot(tradedaystart):
 	variables.init()
 
 	pyautogui.sleep(5)
@@ -56,7 +56,6 @@ def doTradeBot():
 	#underbid order loop logic
 
 	#run for about 9 hours
-	tradedaystart = cm.getEVETimestamp()
 	while cm.getEVETimestamp() - tradedaystart < 3600 * 7.5:
 		for ih in variables.itemhandlerlist:
 			priorlist = getPriorityItemhandlers()
