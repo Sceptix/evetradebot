@@ -64,8 +64,7 @@ def changeOrder(order, newprice):
 		cm.clickxy(thing.left + 265, thing.top + 192)
 		cm.sleep(0.5)
 		refreshAllOrders()
-		changeOrder(order, newprice)
-		return
+		return changeOrder(order, newprice)
 	cm.sleep(0.2)
 	pyautogui.keyDown('ctrl')
 	pyautogui.keyDown('c')
@@ -126,8 +125,7 @@ def cancelOrder(order):
 	print("read marketname while cancelling order: " + marketname)
 	if(cm.similar(marketname.lower(), api.getNameFromID(order.typeid).lower()) < 0.5):
 		print("clicked wrong order while cancelling, retrying")
-		cancelOrder(order)
-		return
+		return cancelOrder(order)
 	
 	pyautogui.moveTo(actingPoint.x, actingPoint.y)
 	cm.sleep(0.2)
@@ -193,8 +191,7 @@ def refreshAllOrders():
 		loopidx += 1
 
 	if not os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
-		refreshAllOrders()
-		return
+		return refreshAllOrders()
 	
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	neworders = []
@@ -207,8 +204,7 @@ def refreshAllOrders():
 		os.remove(logfile)
 	except:
 		cm.sleep(5)
-		refreshAllOrders()
-		return
+		return refreshAllOrders()
 
 	oldorders = []
 	for itemhandler in itemhandlerlist:
@@ -274,8 +270,8 @@ def loadOrders():
 		loopidx += 1
 
 	if not os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
-		loadOrders()
-		return
+		return loadOrders()
+		
 	
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	neworders = []
@@ -288,8 +284,7 @@ def loadOrders():
 		os.remove(logfile)
 	except:
 		cm.sleep(5)
-		loadOrders()
-		return
+		return loadOrders()
 
 	for no in neworders:
 		if not any(no.typeid == ih.typeid for ih in itemhandlerlist):
@@ -429,8 +424,7 @@ def getTopOrders(typeid):
 		loopidx += 1
 
 	if os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
-		getTopOrders(typeid)
-		return
+		return getTopOrders(typeid)
 
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
 	buyorders, sellorders = [], []
@@ -453,8 +447,7 @@ def getTopOrders(typeid):
 		os.remove(logfile)
 	except:
 		cm.sleep(5)
-		getTopOrders(typeid)
-		return
+		return getTopOrders(typeid)
 
 	if(exitflag):
 		return getTopOrders(typeid)

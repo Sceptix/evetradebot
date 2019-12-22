@@ -85,8 +85,7 @@ def addItemToQuickbar(typeid):
 			print("read marketname while adding item: " + marketname)
 			if(cm.similar(marketname.lower(), itemname.lower()) < 0.8):
 				print("clicked wrong item while adding, retrying")
-				addItemToQuickbar(typeid)
-				return
+				return addItemToQuickbar(typeid)
 
 			cm.clickxy(mousex, mousey, right=True)
 			cm.sleep(0.2)
