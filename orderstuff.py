@@ -492,8 +492,9 @@ def getOrderPosition(wantedorder):
 		for idx, x in enumerate(selllist):
 			if(areOrdersTheSame(x, wantedorder)):
 				return (idx, len(selllist))
-	print("couldnt find order: " + api.getNameFromID(wantedorder.typeid) + "  in getorderposition, aborting")
-	sys.exit()
+	print("couldnt find order: " + wantedorder.__dict__ + "  in getorderposition, retrying")
+	refreshAllOrders()
+	return getOrderPosition(wantedorder)
 	
 #this is to avoid over or underbidding somebody with low quantity
 #if overbid is set to false, we dont add the random ammount
