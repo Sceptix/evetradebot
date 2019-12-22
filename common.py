@@ -75,7 +75,7 @@ class ItemHandler:
 		goodprices = orderstuff.getGoodPrices(self.typeid)
 		#check unprofitable, cancel buyorder if it is
 		orderstuff.refreshUnprofitable(self, goodprices)
-		if self.unprofitable:
+		if self.unprofitable and unprofitabledate == -1:
 			unprofitabledate = getEVETimestamp()
 		else:
 			unprofitabledate = -1
