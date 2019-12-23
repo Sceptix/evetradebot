@@ -492,7 +492,7 @@ def getOrderPosition(wantedorder):
 		for idx, x in enumerate(selllist):
 			if(areOrdersTheSame(x, wantedorder)):
 				return (idx, len(selllist))
-	print("couldnt find order: " + wantedorder.__dict__ + "  in getorderposition, retrying")
+	print("couldnt find order: " + str(wantedorder.__dict__) + "  in getorderposition, retrying")
 	refreshAllOrders()
 	return getOrderPosition(wantedorder)
 	
