@@ -146,14 +146,12 @@ def fetchItemHandlers():
 	simpleitems = collectItems()
 	gooditems = []
 	for si in simpleitems:
-		#multiply minmargin by 1.1 so items that are close to minmargin don't get cut off due to unprofitability very fast
-		#todo make setting for 1.1
-		if(variables.maxmargin > si.margin() > variables.minmargin * 1.1):
-			#todo add setting for 750
-			if(si.lowestsell - si.highestbuy > 750):
-				#todo add setting for 10
+		#multiply minmargin by 1.15 so items that are close to minmargin don't get cut off due to unprofitability very fast
+		#todo make setting for 1.15
+		if(variables.maxmargin > si.margin() > variables.minmargin * 1.15):
+			if(si.lowestsell - si.highestbuy > variables.minpricediff):
 				#we dont want items which aren't populated with orders
-				if(si.buycount > 8 and si.sellcount > 8):
+				if(si.buycount > variables.minordercount and si.sellcount > variables.minordercount):
 					gooditems.append(si)
 	setItemVolumes(gooditems)
 	tradableitems = []

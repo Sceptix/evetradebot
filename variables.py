@@ -9,6 +9,8 @@ def init():
 	global maxhandlers
 	global tesseractpath
 	global sleepmultiplier
+	global minpricediff
+	global minordercount
 	itemhandlerlist = []
 	bidaplh = (None, None)
 	sellaplh = (None, None)
@@ -32,3 +34,7 @@ def init():
 				tesseractpath = val
 			elif key == "sleepmultiplier":
 				sleepmultiplier = float(val)
+			elif key == "minpricediff":
+				minpricediff = float(val)
+			elif key == "minordercount":
+				minordercount = float(val)
