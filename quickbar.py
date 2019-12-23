@@ -28,12 +28,12 @@ def search_market(item):
 	cm.sleep(0.3)
 	pyautogui.moveTo(pos.left + pos.width / 2, pos.top + pos.height / 2)
 	pyautogui.click(pos.left + pos.width / 2, pos.top + pos.height / 2)
-	pyautogui.moveTo(0,0)
+	pyautogui.moveTo(200,10)
 
 def addItemToQuickbar(typeid):
 	dontShow()
 	itemname = api.getNameFromID(typeid)
-	pyautogui.moveTo(0,0)
+	pyautogui.moveTo(200,10)
 	pyautogui.sleep(0.3)
 	thing = pyautogui.locateOnScreen('imgs/regionalmarkettopleft.png', confidence=0.9)
 	thing2 = pyautogui.locateOnScreen('imgs/search.png', confidence=0.9)
