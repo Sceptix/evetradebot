@@ -75,12 +75,12 @@ class ItemHandler:
 		goodprices = orderstuff.getGoodPrices(self.typeid)
 		#check unprofitable, cancel buyorder if it is
 		orderstuff.refreshUnprofitable(self, goodprices)
-		if self.unprofitable and unprofitabledate == -1:
-			unprofitabledate = getEVETimestamp()
+		if self.unprofitable and self.unprofitabledate == -1:
+			self.unprofitabledate = getEVETimestamp()
 		else:
-			unprofitabledate = -1
+			self.unprofitabledate = -1
 		#we can only cancel if it has been unprofitable for 20 minutes
-		if(self.unprofitable and self.buyorder is not None and (getEVETimestamp() - unprofitabledate > 1200)):
+		if(self.unprofitable and self.buyorder is not None and (getEVETimestamp() - self.unprofitabledate > 1200)):
 			print("cancelling itemhandler: " + api.getNameFromID(self.typeid) + "'s buyorder due to unprofitability")
 			orderstuff.cancelOrder(self.buyorder)
 			print("trying to sell itemhandler: " + api.getNameFromID(self.typeid) + "'s purchases")
@@ -105,7 +105,7 @@ class ItemHandler:
 		if len(self.sellorderlist) > 0 and all(order.finished == True for order in self.sellorderlist) and self.buyorder is None:
 			self.sellorderlist = []
 			print("itemhandler went through full trade cycle")
-			if self.unprofitable and (getEVETimestamp() - unprofitabledate > 3600):
+			if self.unprofitable and (getEVETimestamp() - self.unprofitabledate > 3600):
 				print("fetching new itemhandlers from api...")
 				api.fetchItemHandlers()
 				return
