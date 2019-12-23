@@ -187,7 +187,7 @@ def fetchItemHandlers():
 				quickbar.addItemToQuickbar(ti.typeid)
 				capitalpercentage = (ti.volume * ti.margin()) / importancesum
 				investition = variables.capital * capitalpercentage
-				buyprice = ti.highestbuy
+				buyprice = orderstuff.getGoodPrices(ti.typeid)[0]
 				if(buyprice == -1):
 					print("Warning, not adding itemhandler: " + getNameFromID(ti.typeid) + " because there is no good price.")
 					continue
