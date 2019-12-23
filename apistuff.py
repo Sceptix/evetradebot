@@ -40,6 +40,8 @@ class SimpleItem:
 		self.highestbuy = highestbuy
 		self.lowestsell = lowestsell
 		self.volume = 0
+		self.buycount = 0
+		self.sellcount = 0
 
 	def margin(self):
 		if self.highestbuy == -1 or self.lowestsell == -1:
@@ -76,17 +78,22 @@ def collectItems():
 				if(order['location_id'] == 60003760):
 					allorders.append(SimpleOrder(int(order['type_id']), str(order['is_buy_order']) == "True", float(order['price'])))
 		page += pagemultiple
-	simpleorderlist = []
+	simpleitemlist = []
 	#have fun understanding this
 	for i in range(0,60000):
-		simpleorderlist.append(SimpleItem(i,-1,-1))
+		simpleitemlist.append(SimpleItem(i,-1,-1))
 	for order in allorders:
-		si = simpleorderlist[order.typeid]
-		if order.is_buy_order and (si.highestbuy < order.price or si.highestbuy == -1):
-			si.highestbuy = order.price
-		if not order.is_buy_order and (si.lowestsell > order.price or si.lowestsell == -1):
-			si.lowestsell = order.price
-	return simpleorderlist
+		si = simpleitemlist[order.typeid]
+		if order.is_buy_order:
+			si.buycount += 1
+			if (si.highestbuy < order.price or si.highestbuy == -1):
+				si.highestbuy = order.price
+		if not order.is_buy_order:
+			si.sellcount += 1
+			if (si.lowestsell > order.price or si.lowestsell == -1):
+				si.lowestsell = order.price
+			
+	return simpleitemlist
 
 async def fetch(item, session):
 	async with session.get("https://esi.evetech.net/latest/markets/10000002/history/?datasource=tranquility&type_id=" + str(item.typeid)) as response:
@@ -137,20 +144,29 @@ def fetchItemHandlers():
 
 	print("fetching tradable items...")
 	simpleitems = collectItems()
-	goodmarginsimpleitems = []
+	gooditems = []
 	for si in simpleitems:
-		if(variables.maxmargin > si.margin() > variables.minmargin):
+		#multiply minmargin by 1.1 so items that are close to minmargin don't get cut off due to unprofitability very fast
+		#todo make setting for 1.1
+		if(variables.maxmargin > si.margin() > variables.minmargin * 1.1):
 			#todo add setting for 750
 			if(si.lowestsell - si.highestbuy > 750):
-				goodmarginsimpleitems.append(si)
-	setItemVolumes(goodmarginsimpleitems)
+				#todo add setting for 10
+				#we dont want items which aren't populated with orders
+				if(si.buycount > 8 and si.sellcount > 8):
+					gooditems.append(si)
+	setItemVolumes(gooditems)
 	tradableitems = []
-	for si in goodmarginsimpleitems:
+	for si in gooditems:
 		if(si.volume > 30000):
-			print("name: " + str(getNameFromID(si.typeid)) + ", margin: " + str(si.margin()) + ", volume: " + str(si.volume))
+			namefromid = getNameFromID(si.typeid)
+			if(namefromid == "bad item"):
+				print("got a bad item with id: " + str(si.typeid))
+				continue
+			print("name: " + namefromid + ", margin: " + str(si.margin()) + ", volume: " + str(si.volume))
 			#todo
 			#there are some items like tungsten which will generate a lot of search results and the ocr cant deal with that
-			if(getNameFromID(si.typeid) == "Tungsten"):
+			if(namefromid == "Tungsten"):
 				continue
 			tradableitems.append(si)
 
