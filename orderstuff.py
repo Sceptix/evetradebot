@@ -50,7 +50,7 @@ def changeOrder(order, newprice):
 			break
 	if thing is None:
 		refreshAllOrders()
-		changeOrder(order, newprice)
+		return changeOrder(order, newprice)
 	box = cm.Area(thing.left + 100, thing.top + 21, 300, 19)
 	ocr = cm.grabandocr(box).splitlines()
 	ocrname = ""
