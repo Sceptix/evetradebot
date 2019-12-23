@@ -7,6 +7,7 @@ import variables
 import orderstuff
 import math
 import quickbar
+import pyautogui
 
 async def agetNameFromID(typeid):
 	async with ClientSession() as session:
@@ -16,10 +17,15 @@ async def agetNameFromID(typeid):
 			return str(rsjson['typeName'])
 
 def getNameFromID(typeid):
-	loop = asyncio.get_event_loop()
-	future = asyncio.ensure_future(agetNameFromID(typeid))
-	typename = loop.run_until_complete(future)
-	loop.close
+	try:
+		loop = asyncio.get_event_loop()
+		future = asyncio.ensure_future(agetNameFromID(typeid))
+		typename = loop.run_until_complete(future)
+		loop.close
+	except:
+		print("failed to get info from fuzzwork, retrying in 15s")
+		pyautogui.sleep(15)
+		return getNameFromID(typeid)
 	return typename
 
 class SimpleOrder:
@@ -88,6 +94,7 @@ async def fetch(item, session):
 		try:
 			rsjson = json.loads(repo)
 		except:
+			print("failed to load volume for item: " + str(item.__dict__))
 			return item
 		vol = 0
 		for day in range(len(rsjson) - 14, len(rsjson)):
