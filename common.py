@@ -55,6 +55,9 @@ class Order:
 		return (getEVETimestamp() - self.issuedate) > 296
 
 #general rule: every item can only ever have 2 orders belonging to it
+
+#TODO! dynamic itemhandler amount, because there are rarely 16 orders
+
 class ItemHandler:
 	def __init__(self, typeid: int, investition: float, volume: int):
 		self.typeid = typeid

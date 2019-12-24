@@ -114,6 +114,8 @@ def cancelOrder(order):
 	pyautogui.move(40, 68)
 	pyautogui.click()
 	cm.sleep(0.5)
+	quickbar.dontShow()
+	cm.sleep(0.2)
 	thing = pyautogui.locateOnScreen('imgs/search.png', confidence=0.9)
 	marketnamearea = cm.Area(thing.left + 158, thing.top + 14, 375, 30)
 	ocr = cm.grabandocr(marketnamearea)
