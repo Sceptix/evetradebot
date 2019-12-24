@@ -14,6 +14,9 @@ from orderstuff import *
 import common as cm
 import variables
 import quickbar
+import sys
+from logging import info as print
+import logging
 
 def guiinit():
 	#close undock window
@@ -30,23 +33,21 @@ def guiinit():
 	variables.sellaplh = cm.getAPandLH(False)
 
 def doTradeBot(tradedaystart):
+	logging.basicConfig(level=logging.DEBUG, filename="logfile.txt", filemode="a+",
+                        format="%(asctime)-15s %(levelname)-8s %(message)s")
 	variables.init()
-
 	pyautogui.sleep(5)
 
 	#todo implement check to look if "expires in" is sorted in the correct direction (lowest timestamp first)
-
 	""" stuff = (a for a in pyautogui.locateAllOnScreen('imgs/expiresin.png') if a.left < 500)
 	for a in stuff:
 		print(a)"""
 
 	quickbar.clear()
 	quickbar.dontShow()
-
+	pyautogui.sleep(1)
 	guiinit()
-
 	api.fetchItemHandlers()
-
 	loadOrders()
 
 	for ih in variables.itemhandlerlist:

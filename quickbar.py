@@ -1,6 +1,7 @@
 import common as cm
 import apistuff as api
 import pyautogui
+from logging import info as print
 
 itemlist = []
 

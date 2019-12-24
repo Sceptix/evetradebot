@@ -10,7 +10,7 @@ from pytz import timezone
 from datetime import datetime
 import variables
 import pyperclip
-
+from logging import info as print
 
 def getEVETimestamp():
 	return datetime.now(timezone('GMT')).replace(tzinfo=None).timestamp()

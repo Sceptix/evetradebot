@@ -12,6 +12,7 @@ import variables
 import copy
 import shutil
 import quickbar
+from logging import info as print
 
 def refreshOrderList():
 	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=2, cache=True)

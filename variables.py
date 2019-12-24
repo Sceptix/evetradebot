@@ -1,3 +1,5 @@
+from logging import info as print
+
 def init():
 	global itemhandlerlist
 	global bidaplh

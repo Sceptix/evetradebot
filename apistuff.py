@@ -8,6 +8,7 @@ import orderstuff
 import math
 import quickbar
 import pyautogui
+from logging import info as print
 
 async def agetNameFromID(typeid):
 	async with ClientSession() as session:
