@@ -169,30 +169,44 @@ def fetchItemHandlers():
 				continue
 			tradableitems.append(si)
 
-
-	print("initiating itemhandlers...")
+	realitems = []
+	for ti in tradableitems:
+		print("checking tradable item: " + getNameFromID(ti.typeid))
+		goodprices = orderstuff.getGoodPrices(ti.typeid)
+		buyprice = goodprices[0]
+		ti.highestbuy = goodprices[0]
+		ti.lowestsell = goodprices[1]
+		if(buyprice == -1):
+			print("no good prices")
+			continue
+		pricemargin = (goodprices[1] - goodprices[0]) / goodprices[1]
+		#the api isn't fresh all the time so it can happen that items get into this list that arent profitable
+		if (pricemargin < variables.minmargin * 1.15):
+			continue
+		#we dont wan't items that are already in ihl
+		if any(ih.typeid == ti.typeid for ih in itemhandlerlist):
+			continue
+		realitems.append(ti)
+		if(len(realitems) == variables.maxhandlers):
+			break
+	print("adding itemhandlers...")
 	importancesum = 0
 	idx = 0
-	for ti in tradableitems[:variables.maxhandlers]:
+	for ti in realitems[:variables.maxhandlers]:
 		#items that have high volume and high margin will get get traded more
 		importancesum += ti.volume * ti.margin()
 	print(importancesum)
-	for ti in tradableitems:
-		if(len(itemhandlerlist) == variables.maxhandlers and not(any(ih.typeid == -1 for ih in itemhandlerlist))):
+	for ri in realitems:
+		if(len(itemhandlerlist) == variables.maxhandlers):
 			break
-		if not(any(ih.typeid == ti.typeid for ih in itemhandlerlist)):
-			if itemhandlerlist[idx].typeid == -1:
-				print("initiating itemhandler: " + getNameFromID(ti.typeid))
-				quickbar.addItemToQuickbar(ti.typeid)
-				capitalpercentage = (ti.volume * ti.margin()) / importancesum
-				investition = variables.capital * capitalpercentage
-				buyprice = orderstuff.getGoodPrices(ti.typeid)[0]
-				if(buyprice == -1):
-					print("Warning, not adding itemhandler: " + getNameFromID(ti.typeid) + " because there is no good price.")
-					continue
-				volume = math.ceil(investition / buyprice)
-				itemhandlerlist[idx] = cm.ItemHandler(ti.typeid, investition, volume)
-			idx += 1
+		if itemhandlerlist[idx].typeid == -1:
+			print("initiating itemhandler: " + getNameFromID(ri.typeid))
+			quickbar.addItemToQuickbar(ri.typeid)
+			capitalpercentage = (ri.volume * ri.margin()) / importancesum
+			investition = variables.capital * capitalpercentage
+			volume = math.ceil(investition / ri.highestbuy)
+			itemhandlerlist[idx] = cm.ItemHandler(ri.typeid, investition, volume)
+		idx += 1
 
 	if(len(itemhandlerlist) > variables.maxhandlers):
 		print("exceeded maxhandlers")

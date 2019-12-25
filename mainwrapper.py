@@ -25,7 +25,7 @@ def guiinit():
 		cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, cache=True)
 	#make regional market search results big so ocr can read better
 	thing = pyautogui.locateOnScreen('imgs/search.png', confidence=0.9)
-	pyautogui.moveTo(thing.left + 76, thing.top + 27)
+	pyautogui.moveTo(thing.left + 75, thing.top + 27)
 	cm.sleep(1)
 	pyautogui.dragRel(300, 0, 1, button='left')
 	cm.sleep(1)
