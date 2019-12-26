@@ -190,7 +190,6 @@ def fetchItemHandlers():
 		realitems.append(ti)
 		if(len(realitems) == variables.maxhandlers):
 			break
-	quickbar.clear()
 	print("adding itemhandlers...")
 	importancesum = 0
 	idx = 0
@@ -203,7 +202,6 @@ def fetchItemHandlers():
 			break
 		if itemhandlerlist[idx].typeid == -1:
 			print("initiating itemhandler: " + getNameFromID(ri.typeid))
-			quickbar.addItemToQuickbar(ri.typeid)
 			capitalpercentage = (ri.volume * ri.margin()) / importancesum
 			investition = variables.capital * capitalpercentage
 			volume = math.ceil(investition / ri.highestbuy)
