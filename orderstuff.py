@@ -305,14 +305,43 @@ def loadOrders():
 				else:
 					itemhandler.sellorderlist.append(no)
 
+def stackitems(item):
+	thing = pyautogui.locateOnScreen('imgs/inventoryitemhangar.png')
+	inventorylist = cm.Area(thing.left + 25, thing.top + 70, 500, 250)
 
-#todo i witnessed that items of the same type didn't stack when freshly bought, stack all resolved the problem
-#implement clicking stack all?
+	cm.sleep(1)
+
+	box = inventorylist.toAbsTuple()
+	ocr = cm.grabandocr(box)
+
+	#todo implement ocr with highestsim check
+	for s in ocr.splitlines():
+		if(s.split()[-1][:5] in item.lower()):
+			offsetpos = inventorylist
+			mousex = offsetpos.x + int(s.split()[6]) / 4 + 5
+			mousey = offsetpos.y + int(s.split()[7]) / 4 + 5
+			cm.clickxy(mousex, mousey, clicks=1, right=True)
+			cm.sleep(0.2)
+
+			box = (mousex + 15,mousey + 2 ,mousex + 15 + 135, mousey + 3 + 250)
+			ocr = cm.grabandocr(box)
+
+			for s in ocr.splitlines():
+				if(s.split()[-1] == "stack"):
+					mousex = mousex + 18 + int(s.split()[6]) / 4 + 5
+					mousey = mousey + 3 + int(s.split()[7]) / 4 + 5
+					cm.clickxy(mousex, mousey)
+					return
+
 def sellitemininventory(typeid, price):
 	item = api.getNameFromID(typeid)
 	cm.clickPointPNG('imgs/inventorytopright.png', 0, 25, 2, cache=True)
 	cm.sleep(0.2)
 	cm.safetypewrite(item)
+
+	stackitems(item)
+
+	cm.sleep(0.5)
 
 	thing = pyautogui.locateOnScreen('imgs/inventoryitemhangar.png')
 	inventorylist = cm.Area(thing.left + 25, thing.top + 70, 500, 250)
