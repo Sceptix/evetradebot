@@ -128,7 +128,7 @@ class LeftoverItemHandler():
 
 		if self.buyorder is not None:
 			print("leftoveritemhandler is cancelling it's buyorder")
-			orderstuff.cancelOrder(buyorder)
+			orderstuff.cancelOrder(self.buyorder)
 			return
 
 		if(len(self.sellorderlist) == 0):
