@@ -122,7 +122,7 @@ class LeftoverItemHandler():
 		self.sellorderlist = sellorderlist
 		self.buyorder = buyorder
 
-	def handle():
+	def handle(self):
 		orderstuff.refreshAllOrders()
 		goodprices = orderstuff.getGoodPrices(self.typeid)
 
