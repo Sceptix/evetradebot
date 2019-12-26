@@ -172,6 +172,7 @@ def fetchItemHandlers():
 	realitems = []
 	for ti in tradableitems:
 		print("checking tradable item: " + getNameFromID(ti.typeid))
+		quickbar.addItemToQuickbar(ti.typeid)
 		goodprices = orderstuff.getGoodPrices(ti.typeid)
 		buyprice = goodprices[0]
 		ti.highestbuy = goodprices[0]
@@ -189,6 +190,7 @@ def fetchItemHandlers():
 		realitems.append(ti)
 		if(len(realitems) == variables.maxhandlers):
 			break
+	quickbar.clear()
 	print("adding itemhandlers...")
 	importancesum = 0
 	idx = 0
