@@ -123,3 +123,4 @@ def openItem(typeid):
 			print(idx * 20)
 			cm.clickPointPNG('imgs/regionalmarkettopleft.png', 35, 81 + idx * 20, cache=True)
 			return
+	print("couldn't find item in quickbar: " + api.getNameFromID(typeid))

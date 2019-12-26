@@ -293,6 +293,7 @@ def loadOrders():
 		if not any(no.typeid == ih.typeid for ih in itemhandlerlist):
 			print("initiating leftoveritemhandler for order:" + api.getNameFromID(no.typeid))
 			itemhandlerlist.append(cm.LeftoverItemHandler(no.typeid, [], None))
+			quickbar.addItemToQuickbar(no.typeid)
 	#sort each neworder back into the itemhandlers
 	for itemhandler in itemhandlerlist:
 		itemhandler.sellorderlist = []
