@@ -495,7 +495,7 @@ def getOrderPosition(wantedorder):
 		for idx, x in enumerate(selllist):
 			if(areOrdersTheSame(x, wantedorder)):
 				return (idx, len(selllist))
-	print("couldnt find order: " + str(wantedorder.__dict__) + "  in getorderposition, retrying")
+	print("couldnt find order: " + str(wantedorder.__dict__) + "  in getorderposition")
 	refreshAllOrders()
 	return getOrderPosition(wantedorder)
 	
@@ -589,7 +589,7 @@ def refreshUnprofitable(itemhandler, goodprices):
 def checkAndUnderBid(itemhandler, goodprices):
 	prices = goodprices
 	#manage buyorder
-	if itemhandler.buyorder is not None:
+	if itemhandler.buyorder is not None and itemhandler.buyorder.finished == False:
 		highestBidder = prices[2]
 		curPrice = prices[0]
 		if(curPrice == -1):
@@ -615,16 +615,24 @@ def checkAndUnderBid(itemhandler, goodprices):
 			print("Warning, not adjusting item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
 		else:
 			for sellorder in itemhandler.sellorderlist:
-				print("curprice of item called \"" + api.getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
-				if(curPrice < float(sellorder.price)):
-					if sellorder.canChange():
-						sellorder.hasbeenoverbid = False
-						if highestBidder:
-							continue
-						print("Adjusting sellorder!")
-						#if we are already top order, make this order the same as that one, so we dont onderbid ourselves
-						print("Bidding for newprice: " + str(targetnewprice))
-						changeOrder(sellorder, targetnewprice)
-					else:
-						sellorder.hasbeenoverbid = True
+				if sellorder.finished == False:
+					print("curprice of item called \"" + api.getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
+					if(curPrice < float(sellorder.price)):
+						if sellorder.canChange():
+							sellorder.hasbeenoverbid = False
+							#todo this may not update a secondary sell order
+							#example:
+							# your highest order - 100
+							# somebody else - 80
+							# your other order - 70
+							#your other will not be updated
+							#fix this by making getgoodprices return the highest bidding order, not a boolean
+							if highestBidder:
+								continue
+							print("Adjusting sellorder!")
+							#if we are already top order, make this order the same as that one, so we dont onderbid ourselves
+							print("Bidding for newprice: " + str(targetnewprice))
+							changeOrder(sellorder, targetnewprice)
+						else:
+							sellorder.hasbeenoverbid = True
 
