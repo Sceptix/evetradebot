@@ -375,11 +375,13 @@ def sellitemininventory(typeid, price):
 					thing = pyautogui.locateOnScreen('imgs/sellitemsellcancel.png')
 					sellbutton = cm.Point( thing.left + 25, thing.top + 12)
 					thing = pyautogui.locateOnScreen('imgs/sellitemduration.png')
-					durationfield = cm.Point( thing.left - 50 , thing.top + 28)
+					duration = cm.Point( thing.left - 50 , thing.top + 28)
 
 					#set duration to 3 months
-					cm.clickPoint(durationfield)
-					cm.clickxy(durationfield.x, durationfield.y + 145)
+					cm.clickPoint(duration)
+					for _ in range(10):
+						pyautogui.press('down')
+					cm.clickPoint(duration)
 
 					#set price
 					pyautogui.moveTo(pricefield.x, pricefield.y)
@@ -425,7 +427,9 @@ def buyorder(typeid, price, quantity):
 	cm.sleep(0.3)
 	cm.safetypewrite(quantity)
 	cm.clickPoint(duration)
-	cm.clickPoint(threemonths)
+	for _ in range(10):
+		pyautogui.press('down')
+	cm.clickPoint(duration)
 	cm.clickPoint(buybutton, 1)
 	cm.sleep(0.6)
 	thing = pyautogui.locateOnScreen('imgs/confirmorder.png')

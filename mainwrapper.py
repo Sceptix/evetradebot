@@ -60,7 +60,7 @@ def doTradeBot(tradedaystart):
 		for ih in variables.itemhandlerlist:
 			priorlist = getPriorityItemhandlers()
 			if priorlist:
-				print("handling prioritised itemhandler: " + api.getNameFromID(priorlist[0]))
+				print("handling prioritised itemhandler: " + api.getNameFromID(priorlist[0].typeid))
 				priorlist[0].handle()
 			print("handling itemhandler: " + api.getNameFromID(ih.typeid))
 			ih.handle()
@@ -76,7 +76,7 @@ def doTradeBot(tradedaystart):
 		for ih in variables.itemhandlerlist:
 			priorlist = getPriorityItemhandlers()
 			if priorlist:
-				print("handling prioritised itemhandler: " + api.getNameFromID(priorlist[0]))
+				print("handling prioritised itemhandler: " + api.getNameFromID(priorlist[0].typeid))
 				priorlist[0].handle()
 			print("handling itemhandler: " + api.getNameFromID(ih.typeid))
 			if ih.sellorderlist:
