@@ -291,11 +291,8 @@ def loadOrders():
 
 	for no in neworders:
 		if not any(no.typeid == ih.typeid for ih in itemhandlerlist):
-			#todo make a new itemhandlertype that only takes care of existing orders and then stops existing
-			#it would be useful for selling leftover items and stuff
-			print("you still have an order that won't get an itemhandler, please cancel it:")
-			print(api.getNameFromID(no.typeid))
-			sys.exit()
+			print("initiating leftoveritemhandler for order:" + api.getNameFromID(no.typeid))
+			itemhandlerlist.append(cm.LeftoverItemHandler(no.typeid, [], None))
 	#sort each neworder back into the itemhandlers
 	for itemhandler in itemhandlerlist:
 		itemhandler.sellorderlist = []
@@ -533,6 +530,13 @@ def getGoodPrices(typeid):
 	return returntuple
 
 def buyItem(itemhandler, goodprices):
+	if(len(getOrderCache()) > 17):
+		print("exceeded max orders, cancelling a leftoveritemhandler")
+		for ih in variables.itemhandlerlist:
+			if(isinstance(ih, cm.LeftoverItemHandler)):
+				for o in ih.sellorderlist:
+					cancelOrder(o)
+				return buyItem(itemhandler, goodprices)
 	quantity = itemhandler.volume
 	buyprice = goodprices[0]
 	if(buyprice == -1):
@@ -546,6 +550,13 @@ def buyItem(itemhandler, goodprices):
 	refreshAllOrders()
 
 def sellItem(itemhandler, goodprices):
+	if(len(getOrderCache()) > 17):
+		print("exceeded max orders, cancelling a leftoveritemhandler")
+		for ih in variables.itemhandlerlist:
+			if(isinstance(ih, cm.LeftoverItemHandler)):
+				for o in ih.sellorderlist:
+					cancelOrder(o)
+				return sellItem(itemhandler, goodprices)
 	sellprice = goodprices[1]
 	if(sellprice == -1):
 		print("Warning, not selling item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")

@@ -68,10 +68,6 @@ class ItemHandler:
 		self.sellorderlist = []
 		self.unprofitabledate = -1
 
-	def clearOrders(self):
-		self.buyorder = None
-		self.sellorderlist = []
-
 	def handle(self, nomorebuy=False):
 		orderstuff.refreshAllOrders()
 
@@ -88,6 +84,7 @@ class ItemHandler:
 			orderstuff.cancelOrder(self.buyorder)
 			print("trying to sell itemhandler: " + api.getNameFromID(self.typeid) + "'s purchases")
 			orderstuff.sellItem(self, goodprices)
+			#we only replace the handler when the sellorder is gone
 			if len(self.sellorderlist) == 0:
 				print("didn't have any purchases, fetching new itemhandlers from api...")
 				api.fetchItemHandlers()
@@ -118,6 +115,28 @@ class ItemHandler:
 		
 		#update prices
 		orderstuff.checkAndUnderBid(self, goodprices)
+
+class LeftoverItemHandler():
+	def __init__(self, typeid: int, sellorderlist, buyorder):
+		self.typeid = typeid
+		self.sellorderlist = sellorderlist
+		self.buyorder = buyorder
+
+	def handle():
+		orderstuff.refreshAllOrders()
+		goodprices = orderstuff.getGoodPrices(self.typeid)
+
+		if buyorder is not None:
+			print("leftoveritemhandler is cancelling it's buyorder")
+			orderstuff.cancelOrder(buyorder)
+			return
+
+		if(len(self.sellorderlist) == 0):
+			variables.itemhandlerlist.remove(self)
+			return
+
+		orderstuff.checkAndUnderBid(self, goodprices)
+
 
 def clickPoint(point, clicks=1, right=False):
 	pyautogui.moveTo(point.x, point.y)
