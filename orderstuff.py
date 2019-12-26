@@ -305,8 +305,14 @@ def loadOrders():
 				else:
 					itemhandler.sellorderlist.append(no)
 
+
+#todo i witnessed that items of the same type didn't stack when freshly bought, stack all resolved the problem
+#implement clicking stack all?
 def sellitemininventory(typeid, price):
 	item = api.getNameFromID(typeid)
+
+	cm.clickPointPNG('imgs/inventorytopright.png', 0, 25, 2, cache=True)
+
 	cm.clickPointPNG('imgs/inventorytopright.png', 0, 25, 2, cache=True)
 	cm.sleep(0.2)
 	cm.safetypewrite(item)

@@ -5,5 +5,5 @@ minquantity 10
 maxhandlers 8
 tesseractpath C:\\Users\\timon\\Desktop\\tesseract\\
 sleepmultiplier 1
-minpricediff 300
+minpricediff 250
 minordercount 8

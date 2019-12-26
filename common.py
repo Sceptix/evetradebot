@@ -126,7 +126,7 @@ class LeftoverItemHandler():
 		orderstuff.refreshAllOrders()
 		goodprices = orderstuff.getGoodPrices(self.typeid)
 
-		if buyorder is not None:
+		if self.buyorder is not None:
 			print("leftoveritemhandler is cancelling it's buyorder")
 			orderstuff.cancelOrder(buyorder)
 			return
