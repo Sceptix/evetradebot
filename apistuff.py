@@ -198,7 +198,7 @@ def fetchItemHandlers():
 		importancesum += ti.volume * ti.margin()
 	print(importancesum)
 	for ri in realitems:
-		if(len(itemhandlerlist) == variables.maxhandlers):
+		if(len(itemhandlerlist) == variables.maxhandlers and all(ih.typeid != -1 for ih in itemhandlerlist)):
 			break
 		if itemhandlerlist[idx].typeid == -1:
 			print("initiating itemhandler: " + getNameFromID(ri.typeid))
