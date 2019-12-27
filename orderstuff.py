@@ -604,7 +604,7 @@ def sellItem(itemhandler, goodprices):
 		print("couldnt sell item from inventory, doesnt exist")
 		return
 	quantity = 0
-	if itemhandler.buyorder.finished:
+	if itemhandler.buyorder is None or itemhandler.buyorder.finished:
 		#adjust the quantity if there are previous sellorders
 		quantity = itemhandler.volume
 		for sellorder in itemhandler.sellorderlist:
