@@ -55,6 +55,11 @@ def doTradeBot(tradedaystart):
 
 	#underbid order loop logic
 
+	print("handling leftoveritemhandlers once")
+	for ih in variables.itemhandlerlist:
+		if isinstance(ih, cm.LeftoverItemHandler):
+			ih.handle()
+
 	#run for about 9 hours
 	while cm.getEVETimestamp() - tradedaystart < 3600 * 7.5:
 		for ih in variables.itemhandlerlist:
@@ -71,11 +76,6 @@ def doTradeBot(tradedaystart):
 			cancelOrder(ih.buyorder)
 			goodprices = getGoodPrices(ih.typeid)
 			sellItem(ih, goodprices)
-
-	print("handling leftoveritemhandlers once")
-	for ih in variables.itemhandlerlist:
-		if isinstance(ih, cm.LeftoverItemHandler):
-			ih.handle()
 
 	while cm.getEVETimestamp() - tradedaystart < 3600 * 9:
 		for ih in variables.itemhandlerlist:
