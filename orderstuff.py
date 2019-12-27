@@ -487,6 +487,7 @@ def getTopOrders(typeid):
 		return getTopOrders(typeid)
 
 	if(exitflag):
+		quickbar.addItemToQuickbar(typeid)
 		return getTopOrders(typeid)
 	#highest first
 	buyorders.sort(key=lambda x: x.price, reverse=True)

@@ -134,6 +134,7 @@ def setItemVolumes(simpleitemslist):
 	loop.close
 
 def fetchItemHandlers():
+	quickbar.clear()
 	itemhandlerlist = variables.itemhandlerlist
 
 	for idx, ih in enumerate(itemhandlerlist):

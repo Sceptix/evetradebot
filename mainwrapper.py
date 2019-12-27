@@ -43,7 +43,6 @@ def doTradeBot(tradedaystart):
 	for a in stuff:
 		print(a)"""
 
-	quickbar.clear()
 	quickbar.dontShow()
 	pyautogui.sleep(1)
 	guiinit()

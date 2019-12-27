@@ -96,7 +96,8 @@ def addItemToQuickbar(typeid):
 			cm.clickxy(mousex, mousey, right=True)
 			cm.sleep(0.2)
 			cm.clickxy(mousex + 52, mousey + 29)
-			itemlist.append(itemname)
+			if itemname not in itemlist:
+				itemlist.append(itemname)
 			itemlist.sort(key=str.lower)
 			return
 
