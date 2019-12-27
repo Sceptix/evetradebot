@@ -72,6 +72,11 @@ def doTradeBot(tradedaystart):
 			goodprices = getGoodPrices(ih.typeid)
 			sellItem(ih, goodprices)
 
+	print("handling leftoveritemhandlers once")
+	for ih in variables.itemhandlerlist:
+		if isinstance(ih, cm.LeftoverItemHandler):
+			ih.handle()
+
 	while cm.getEVETimestamp() - tradedaystart < 3600 * 9:
 		for ih in variables.itemhandlerlist:
 			priorlist = getPriorityItemhandlers()

@@ -620,9 +620,6 @@ def sellItem(itemhandler, goodprices):
 def getPriorityItemhandlers():
 	priorlist = []
 	for ih in variables.itemhandlerlist:
-		if isinstance(ih, cm.LeftoverItemHandler):
-			priorlist.append(ih)
-			continue
 		if ih.buyorder is not None and ih.buyorder.hasbeenoverbid and ih.buyorder.canChange():
 			priorlist.append(ih)
 			continue
