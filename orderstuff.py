@@ -15,8 +15,10 @@ import quickbar
 from logging import info as print
 
 def refreshOrderList():
-	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=2, cache=True)
-	cm.sleep(0.7)
+	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=1, cache=True)
+	cm.sleep(0.2)
+	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=1, cache=True)
+	cm.sleep(0.2)
 
 def changeOrder(order, newprice):
 	refreshOrderList()
