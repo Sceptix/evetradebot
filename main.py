@@ -25,9 +25,9 @@ if __name__ == '__main__':
                 process.terminate()
                 print("we lost connection, initiating restart procedure")
                 point = cm.Point(cl.left + 169, cl.top + 194)
-                cm.clickPoint(point)
+                cm.clickPoint(point, 5)
                 #wait 20 minutes for internet to come back or eve to restart
-                time.sleep(10)
+                time.sleep(1200)
                 lg = pyautogui.locateOnScreen("imgs/launchgroup.png")
                 pn = pyautogui.locateOnScreen("imgs/playnow.png")
                 while (lg is None and pn is None):
