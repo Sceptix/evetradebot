@@ -39,10 +39,11 @@ if __name__ == '__main__':
                 cm.clickPointPNG("imgs/launchgroup.png", 10, 10)
                 cm.clickPointPNG("imgs/playnow.png", 10, 10)
                 #wait for game to start
-                time.sleep(45)
+                time.sleep(60)
                 print("clicking character")
-                cm.clickxy(470, 420)
-                time.sleep(45)
+                #5 clicks because the window may not be focused
+                cm.clickxy(470, 420, 5)
+                time.sleep(60)
                 print("starting bot")
                 process = multiprocessing.Process(target=mainwrapper.doTradeBot, args=(tradedaystart,))
                 process.start()
