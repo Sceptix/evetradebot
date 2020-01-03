@@ -42,7 +42,7 @@ if __name__ == '__main__':
                 time.sleep(60)
                 print("clicking character")
                 #5 clicks because the window may not be focused
-                cm.clickxy(470, 420, 5)
+                cm.clickxy(470 + 110, 420, 5)
                 time.sleep(60)
                 print("starting bot")
                 process = multiprocessing.Process(target=mainwrapper.doTradeBot, args=(tradedaystart,))
