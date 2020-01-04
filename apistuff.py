@@ -137,9 +137,13 @@ def fetchItemHandlers():
 	quickbar.clear()
 	itemhandlerlist = variables.itemhandlerlist
 
-	for idx, ih in enumerate(itemhandlerlist):
-		if(ih.unprofitable):
-			del itemhandlerlist[idx]
+	print("old ihl:")
+	print(itemhandlerlist)
+
+	itemhandlerlist[:] = [ih for ih in itemhandlerlist if not ih.unprofitable]
+
+	print("new ihl:")
+	print(itemhandlerlist)
 
 	while len(itemhandlerlist) < variables.maxhandlers:
 		itemhandlerlist.append(cm.ItemHandler(-1,-1,-1))

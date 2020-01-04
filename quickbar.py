@@ -14,12 +14,13 @@ def dontShow():
 	cm.sleep(0.5)
 
 def clear():
+	print("clearing quickbar...")
 	show()
 	cm.sleep(0.2)
 	cm.clickPointPNG('imgs/resetquickbar.png', 5, 5)
 	cm.sleep(0.5)
 	cm.clickPointPNG('imgs/yesno.png', 5, 5)
-	itemlist = []
+	itemlist.clear()
 
 def search_market(item):
 	pos = pyautogui.locateOnScreen('imgs/search.png')
@@ -96,9 +97,13 @@ def addItemToQuickbar(typeid):
 			cm.clickxy(mousex, mousey, right=True)
 			cm.sleep(0.2)
 			cm.clickxy(mousex + 52, mousey + 29)
+			print("old itemlist:")
+			print(itemlist)
 			if itemname not in itemlist:
 				itemlist.append(itemname)
 			itemlist.sort(key=str.lower)
+			print("new itemlist:")
+			print(itemlist)
 			return
 
 		if loopidx > 12:
@@ -121,7 +126,9 @@ def openItem(typeid):
 	show()
 	for idx, item in enumerate(itemlist):
 		if api.getNameFromID(typeid) == item:
-			print(idx * 20)
+			print("found typeid: " + str(typeid) + " in quickbar at index: " + str(idx))
+			print("all items in quickbar:")
+			print(itemlist)
 			cm.clickPointPNG('imgs/regionalmarkettopleft.png', 35, 81 + idx * 20, cache=True)
 			return
 	print("couldn't find item in quickbar: " + api.getNameFromID(typeid))

@@ -454,8 +454,10 @@ def getTopOrders(typeid):
 	loopidx = 0
 	while True:
 		if(len(os.listdir(marketlogsfolder)) > 0):
+			print("found file in marketlogs...")
 			break
 		if loopidx % 5 == 0:
+			print("didn't open item")
 			quickbar.openItem(typeid)
 			cm.clickPointPNG("imgs/exporttofile.png", 5, 5, cache=True)
 		else:
@@ -463,6 +465,7 @@ def getTopOrders(typeid):
 		loopidx += 1
 
 	if os.listdir(marketlogsfolder)[-1].startswith('My Orders'):
+		print("wrong file exported")
 		return getTopOrders(typeid)
 
 	logfile = marketlogsfolder + "\\" + os.listdir(marketlogsfolder)[-1]
@@ -485,10 +488,12 @@ def getTopOrders(typeid):
 					sellorders.append(o)
 		os.remove(logfile)
 	except:
+		print("exception while reading item export")
 		cm.sleep(5)
 		return getTopOrders(typeid)
 
 	if(exitflag):
+		print("wrong item was exported")
 		quickbar.addItemToQuickbar(typeid)
 		return getTopOrders(typeid)
 	#highest first
