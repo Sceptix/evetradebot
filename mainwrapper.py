@@ -7,6 +7,8 @@
 #make sure that the market window is spaced so "the forge" and "regional market" are on two different lines
 #make tooltips delay very long, reject all chat requests, leave help channel
 
+#todo make an itemhandler sell everything it already bought if it doesnt have a sellorder after 4 hours or so
+
 import pyautogui
 import os
 import apistuff as api
