@@ -140,12 +140,17 @@ def fetchItemHandlers():
 	print("old ihl:")
 	print(itemhandlerlist)
 
-	itemhandlerlist[:] = [ih for ih in itemhandlerlist if not ih.unprofitable]
+	for idx, ih in enumerate(itemhandlerlist):
+		if(isinstance(ih, cm.ItemHandler)):
+			if(ih.unprofitable):
+				itemhandlerlist[idx] = cm.ItemHandler(-1,-1,-1);
 
 	print("new ihl:")
 	print(itemhandlerlist)
 
-	while len(itemhandlerlist) < variables.maxhandlers:
+	leftoveritemhandlerlist = [ih for ih in itemhandlerlist if isinstance(ih, cm.LeftoverItemHandler)]
+
+	while ( len(itemhandlerlist) - len(leftoveritemhandlerlist) ) < 8:
 		itemhandlerlist.append(cm.ItemHandler(-1,-1,-1))
 
 	print("fetching tradable items...")
@@ -193,8 +198,6 @@ def fetchItemHandlers():
 		if any(ih.typeid == ti.typeid for ih in itemhandlerlist):
 			continue
 		realitems.append(ti)
-		if(len(realitems) == variables.maxhandlers):
-			break
 	print("adding itemhandlers...")
 	importancesum = 0
 	idx = 0
@@ -203,7 +206,7 @@ def fetchItemHandlers():
 		importancesum += ti.volume * ti.margin()
 	print(importancesum)
 	for ri in realitems:
-		if(len(itemhandlerlist) == variables.maxhandlers and all(ih.typeid != -1 for ih in itemhandlerlist)):
+		if(all(ih.typeid != -1 for ih in itemhandlerlist)):
 			break
 		if itemhandlerlist[idx].typeid == -1:
 			print("initiating itemhandler: " + getNameFromID(ri.typeid))
@@ -212,7 +215,3 @@ def fetchItemHandlers():
 			volume = math.ceil(investition / ri.highestbuy)
 			itemhandlerlist[idx] = cm.ItemHandler(ri.typeid, investition, volume)
 		idx += 1
-
-	if(len(itemhandlerlist) > variables.maxhandlers):
-		print("exceeded maxhandlers")
-		sys.exit()
