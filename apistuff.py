@@ -198,6 +198,8 @@ def fetchItemHandlers():
 		if any(ih.typeid == ti.typeid for ih in itemhandlerlist):
 			continue
 		realitems.append(ti)
+		if(len(realitems) > 10):
+			break
 	print("adding itemhandlers...")
 	importancesum = 0
 	idx = 0
