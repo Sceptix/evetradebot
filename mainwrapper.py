@@ -7,8 +7,6 @@
 #make sure that the market window is spaced so "the forge" and "regional market" are on two different lines
 #make tooltips delay very long, reject all chat requests, leave help channel
 
-#todo make an itemhandler sell everything it already bought if it doesnt have a sellorder after 4 hours or so
-
 import pyautogui
 import os
 import apistuff as api
@@ -61,8 +59,8 @@ def doTradeBot(tradedaystart):
 		if isinstance(ih, cm.LeftoverItemHandler):
 			ih.handle()
 
-	#run for about 9 hours
-	while cm.getEVETimestamp() - tradedaystart < 3600 * 7.5:
+	#bot runs 10 hours total, 7 hours normally and 3 hours trying to sell everything
+	while cm.getEVETimestamp() - tradedaystart < 3600 * 7:
 		for ih in variables.itemhandlerlist:
 			priorlist = getPriorityItemhandlers()
 			if priorlist:
@@ -71,6 +69,7 @@ def doTradeBot(tradedaystart):
 			print("handling itemhandler: " + api.getNameFromID(ih.typeid))
 			ih.handle()
 
+	#cancels all buyorders, tries selling all items that were bought
 	print("cancelling all buyorders")
 	for ih in variables.itemhandlerlist:
 		if ih.buyorder is not None:
@@ -78,7 +77,7 @@ def doTradeBot(tradedaystart):
 			goodprices = getGoodPrices(ih.typeid)
 			sellItem(ih, goodprices)
 
-	while cm.getEVETimestamp() - tradedaystart < 3600 * 9:
+	while cm.getEVETimestamp() - tradedaystart < 3600 * 10:
 		for ih in variables.itemhandlerlist:
 			priorlist = getPriorityItemhandlers()
 			if priorlist:
