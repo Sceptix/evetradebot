@@ -15,10 +15,12 @@ import quickbar
 from logging import info as print
 
 def refreshOrderList():
-	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=1, cache=True)
+	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, cache=True)
 	cm.sleep(0.2)
-	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, clicks=1, cache=True)
+	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, cache=True)
 	cm.sleep(0.2)
+	while pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9) is None:
+		cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, cache=True)
 
 def changeOrder(order, newprice):
 	refreshOrderList()
