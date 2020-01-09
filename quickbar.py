@@ -88,9 +88,11 @@ def addItemToQuickbar(typeid):
 			for line in ocr.splitlines():
 				if len(line.split()) > 11:
 					marketname += line.split()[-1] + ' '
-			marketname = marketname.strip()
+			#strips marketname of whitespace and the list 4 characters, which should be: " i ©"
+			marketname = marketname.strip()[:-4]
 			print("read marketname while adding item: " + marketname)
-			if(cm.similar(marketname.lower(), itemname.lower()) < 0.8):
+			#marketname is the ocr result, itemname is the actual item were trying to add
+			if(cm.similar(marketname.lower(), itemname.lower()) < 0.75):
 				print("clicked wrong item while adding, retrying")
 				return addItemToQuickbar(typeid)
 
