@@ -20,7 +20,9 @@ def refreshOrderList():
 	cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, cache=True)
 	cm.sleep(0.2)
 	while pyautogui.locateOnScreen('imgs/myordersselling.png', confidence=0.9) is None:
+		print("didnt properly reopen order list")
 		cm.clickPointPNG('imgs/marketordersbutton.png', 10, 10, cache=True)
+		cm.sleep(1)
 
 def changeOrder(order, newprice):
 	refreshOrderList()
