@@ -57,6 +57,8 @@ class Order:
 #general rule: every item can only ever have 2 orders belonging to it
 
 #TODO! dynamic itemhandler amount, because there are rarely 16 orders
+#maybe don't do this, itemhandlers need a lot of time to sell and buy items
+#also capital allocation will be way more complicated
 
 class ItemHandler:
 	def __init__(self, typeid: int, investition: float, volume: int):
@@ -70,6 +72,9 @@ class ItemHandler:
 
 	def handle(self, nomorebuy=False):
 		orderstuff.refreshAllOrders()
+
+		if(nomorebuy and not self.sellorderlist and not self.buyorder):
+			return
 
 		goodprices = orderstuff.getGoodPrices(self.typeid)
 		#check unprofitable, cancel buyorder if it is
@@ -86,6 +91,7 @@ class ItemHandler:
 			print("trying to sell itemhandler: " + api.getNameFromID(self.typeid) + "'s purchases")
 			orderstuff.sellItem(self, goodprices)
 			#we only replace the handler when the sellorder is gone
+			#todo implement function that converts an unprofitable itemhandler to an leftoveritemhandler, so there's space for a normal itemhandler
 			if len(self.sellorderlist) == 0:
 				print("didn't have any purchases, fetching new itemhandlers from api...")
 				api.fetchItemHandlers()

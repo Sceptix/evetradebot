@@ -578,14 +578,22 @@ def getGoodPrices(typeid):
 	print(returntuple)
 	return returntuple
 
+def getWorthlessLOIHSellorder():
+	lowestvalue = 10**100
+	bestloihso = None
+	for ih in variables.itemhandlerlist:
+		if(isinstance(ih, cm.LeftoverItemHandler)):
+			for so in ih.sellorderlist:
+				if(so.volremaining * so.price < lowestvalue):
+					lowestvalue = so.volremaining * so.price;
+					bestloihso = so
+	return bestloihso
+
 def buyItem(itemhandler, goodprices):
-	if(len(getOrderCache()) > 17):
-		print("exceeded max orders, cancelling a leftoveritemhandler")
-		for ih in variables.itemhandlerlist:
-			if(isinstance(ih, cm.LeftoverItemHandler)):
-				for o in ih.sellorderlist:
-					cancelOrder(o)
-				return buyItem(itemhandler, goodprices)
+	if(len(getOrderCache()) > 16):
+		print("will exceeded max orders, cancelling a leftoveritemhandler's cheapest sellorder")
+		cancelOrder(getWorthlessLOIHSellorder())
+		return buyItem(itemhandler, goodprices)
 	quantity = itemhandler.volume
 	buyprice = goodprices[0]
 	if(buyprice == -1):
@@ -599,13 +607,10 @@ def buyItem(itemhandler, goodprices):
 	refreshAllOrders()
 
 def sellItem(itemhandler, goodprices):
-	if(len(getOrderCache()) > 17):
-		print("exceeded max orders, cancelling a leftoveritemhandler")
-		for ih in variables.itemhandlerlist:
-			if(isinstance(ih, cm.LeftoverItemHandler)):
-				for o in ih.sellorderlist:
-					cancelOrder(o)
-				return sellItem(itemhandler, goodprices)
+	if(len(getOrderCache()) > 16):
+		print("will exceeded max orders, cancelling a leftoveritemhandler's cheapest sellorder")
+		cancelOrder(getWorthlessLOIHSellorder())
+		return sellItem(itemhandler, goodprices)
 	sellprice = goodprices[1]
 	if(sellprice == -1):
 		print("Warning, not selling item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
@@ -665,6 +670,7 @@ def checkAndUnderBid(itemhandler, goodprices):
 					changeOrder(itemhandler.buyorder, newprice)
 				else:
 					itemhandler.buyorder.hasbeenoverbid = True
+					print("overbid, but we cant change order yet")
 	#manage sellorders
 	#this makes all of your sellorders have the same price
 	if itemhandler.sellorderlist:
@@ -674,25 +680,20 @@ def checkAndUnderBid(itemhandler, goodprices):
 		if(curPrice == -1):
 			print("Warning, not adjusting item: " + api.getNameFromID(itemhandler.typeid) + " because there is no good price.")
 		else:
+			if highestBidder:
+				print("we are highestbidder, equalizing orders")
+				targetnewprice = curPrice
 			for sellorder in itemhandler.sellorderlist:
 				if sellorder.finished == False:
 					print("curprice of item called \"" + api.getNameFromID(itemhandler.typeid) + "\" is: " + str(curPrice))
 					if(curPrice < float(sellorder.price)):
 						if sellorder.canChange():
 							sellorder.hasbeenoverbid = False
-							#todo this may not update a secondary sell order
-							#example:
-							# your highest order - 100
-							# somebody else - 80
-							# your other order - 70
-							#your other will not be updated
-							#fix this by making getgoodprices return the highest bidding order, not a boolean
-							if highestBidder:
-								continue
 							print("Adjusting sellorder!")
-							#if we are already top order, make this order the same as that one, so we dont onderbid ourselves
+							#this may type in the same price an order already has if we are highestbidder, but eve will just not change the order
 							print("Bidding for newprice: " + str(targetnewprice))
 							changeOrder(sellorder, targetnewprice)
 						else:
 							sellorder.hasbeenoverbid = True
+							print("overbid, but we cant change order yet")
 

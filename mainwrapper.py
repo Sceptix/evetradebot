@@ -86,10 +86,9 @@ def doTradeBot(tradedaystart):
 			print("handling itemhandler: " + api.getNameFromID(ih.typeid))
 			if ih.sellorderlist:
 				ih.handle(nomorebuy=True)
-	print("cancelling all sellorders")
+	print("listung all unfinished sellorders")
 	for idx, ih in enumerate(variables.itemhandlerlist):
 		for so in ih.sellorderlist:
 			print("Couldn't finish selling item called: " + api.getNameFromID(so.typeid))
-			cancelOrder(so)
 	print("ended trading day")
 	#todo add an earnings report
