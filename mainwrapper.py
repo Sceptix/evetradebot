@@ -69,11 +69,10 @@ def doTradeBot(tradedaystart):
 			print("handling itemhandler: " + api.getNameFromID(ih.typeid))
 			ih.handle()
 
-	#cancels all buyorders, tries selling all items that were bought
-	print("cancelling all buyorders")
+	#tries selling all items that were bought
+	print("selling all buught items")
 	for ih in variables.itemhandlerlist:
 		if ih.buyorder is not None:
-			cancelOrder(ih.buyorder)
 			goodprices = getGoodPrices(ih.typeid)
 			sellItem(ih, goodprices)
 
