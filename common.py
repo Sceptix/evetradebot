@@ -70,7 +70,7 @@ class ItemHandler:
 		self.sellorderlist = []
 		self.unprofitabledate = -1
 
-	def handle(self, nomorebuy=False):
+	def handle(self, nom orebuy=False):
 		orderstuff.refreshAllOrders()
 
 		if(nomorebuy and not self.sellorderlist and not self.buyorder):

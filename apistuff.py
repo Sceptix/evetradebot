@@ -175,7 +175,8 @@ def fetchItemHandlers():
 			print("name: " + namefromid + ", margin: " + str(si.margin()) + ", volume: " + str(si.volume))
 			#todo
 			#there are some items like tungsten which will generate a lot of search results and the ocr cant deal with that
-			if(namefromid == "Tungsten"):
+			banneditems = ["Tungsten", "Titanium"]
+			if(namefromid in banneditems):
 				continue
 			tradableitems.append(si)
 
