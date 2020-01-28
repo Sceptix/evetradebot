@@ -99,7 +99,7 @@ def cancelOrder(order):
 	refreshOrderList()
 	refreshAllOrders()
 
-	position, itemsinlist = getOrderPosition(order)
+	position, itemsinlist, error = getOrderPosition(order)
 	print("cancelling buyorder: " + api.getNameFromID(order.typeid))
 
 	if order.bid:
@@ -156,6 +156,7 @@ def cancelOrder(order):
 			for so in ih.sellorderlist:
 				if areOrdersTheSame(so, order):
 					so = None
+	print("successfully cancelled order")
 
 #used for checking if orders are the same when orderid isnt set
 def areOrdersTheSame(o1, o2):
@@ -579,6 +580,7 @@ def getGoodPrices(typeid):
 	return returntuple
 
 def getWorthlessLOIHSellorder():
+	refreshAllOrders()
 	lowestvalue = 10**100
 	bestloihso = None
 	for ih in variables.itemhandlerlist:

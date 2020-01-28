@@ -70,7 +70,7 @@ def doTradeBot(tradedaystart):
 			ih.handle()
 
 	#tries selling all items that were bought
-	print("selling all buught items")
+	print("selling all bought items")
 	for ih in variables.itemhandlerlist:
 		if ih.buyorder is not None:
 			goodprices = getGoodPrices(ih.typeid)
