@@ -99,7 +99,7 @@ def cancelOrder(order):
 	refreshOrderList()
 	refreshAllOrders()
 
-	position, itemsinlist, error = getOrderPosition(order)
+	position, itemsinlist = getOrderPosition(order)
 	print("cancelling buyorder: " + api.getNameFromID(order.typeid))
 
 	if order.bid:
